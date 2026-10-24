@@ -1,0 +1,127 @@
+{
+  "recordedAt": "2026-10-24T23:02:13.911Z",
+  "node": "v24.22.1",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M1",
+  "engine": "0.14.9",
+  "policy": {
+    "sampleLimit": 8,
+    "rolloutCount": 4,
+    "rolloutPlies": 4,
+    "qualityMargin": 0.08,
+    "softDeadlineMs": 4000,
+    "hardDeadlineMs": 5000,
+    "pathLimit": 25000
+  },
+  "results": [
+    {
+      "fixture": "opening",
+      "rolledDfen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 PN",
+      "runs": [
+        {
+          "elapsedMs": 1288,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 3,
+          "scored": 8,
+          "legalPaths": 120,
+          "uniqueStates": 64
+        },
+        {
+          "elapsedMs": 1261,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 3,
+          "scored": 8,
+          "legalPaths": 120,
+          "uniqueStates": 64
+        },
+        {
+          "elapsedMs": 1288,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 3,
+          "scored": 8,
+          "legalPaths": 120,
+          "uniqueStates": 64
+        }
+      ],
+      "minMs": 1261,
+      "medianMs": 1288,
+      "maxMs": 1288
+    },
+    {
+      "fixture": "kingSafety",
+      "rolledDfen": "k7/4r3/8/8/8/8/4R3/4K3 w - - 0 1 R",
+      "runs": [
+        {
+          "elapsedMs": 269,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 8,
+          "legalPaths": 12,
+          "uniqueStates": 12
+        },
+        {
+          "elapsedMs": 260,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 8,
+          "legalPaths": 12,
+          "uniqueStates": 12
+        },
+        {
+          "elapsedMs": 258,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 8,
+          "legalPaths": 12,
+          "uniqueStates": 12
+        }
+      ],
+      "minMs": 258,
+      "medianMs": 260,
+      "maxMs": 269
+    },
+    {
+      "fixture": "highBranching",
+      "rolledDfen": "4k3/8/8/8/3Q4/8/8/4K3 w - - 0 1 QQQ",
+      "runs": [
+        {
+          "elapsedMs": 259,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 1,
+          "legalPaths": 13303,
+          "uniqueStates": 63
+        },
+        {
+          "elapsedMs": 256,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 1,
+          "legalPaths": 13303,
+          "uniqueStates": 63
+        },
+        {
+          "elapsedMs": 257,
+          "status": "ready",
+          "reason": "sampled",
+          "choices": 1,
+          "scored": 1,
+          "legalPaths": 13303,
+          "uniqueStates": 63
+        }
+      ],
+      "minMs": 256,
+      "medianMs": 257,
+      "maxMs": 259
+    }
+  ]
+}
