@@ -3,8 +3,9 @@
 All application HTML, CSS and TypeScript in this scaffold was authored for this
 repository during the hackathon window with Codex and is covered by the
 repository's AGPL-3.0-only license. The DC text tile and abstract checkerboard
-are CSS/text, not copied Fortemate brand artwork. System fonts are used; no
-images, voices, music or TV assets are bundled.
+are CSS/text, not copied Fortemate brand artwork. Chess pieces are Unicode
+glyphs rendered by system fonts. No images, voices, music or TV assets are
+bundled.
 
 Direct npm dependencies are exact-version pinned; `package-lock.json` records
 transitive versions, registry locations and integrity hashes. Installed

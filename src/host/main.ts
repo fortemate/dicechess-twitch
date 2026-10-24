@@ -10,7 +10,7 @@ try {
   console.log(`Operator: ${host.operatorUrl}`);
   console.log(`OBS (read-only): ${host.obsUrl}`);
   console.log(
-    'Scaffold only: Twitch and gameplay are not connected. State resets on restart.',
+    'Local game foundation: Twitch voting is not connected. State resets on restart.',
   );
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => {

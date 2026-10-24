@@ -39,7 +39,7 @@ function command(
   return {
     sessionId: state.sessionId,
     expectedRevision: state.revision,
-    phase: 'paused',
+    action: 'set-message',
     message,
   };
 }
@@ -103,7 +103,7 @@ test(
       assert.equal(response.status, 200);
       const committed = (await response.json()) as PublicSnapshot;
       assert.equal(committed.revision, original.revision + 1);
-      assert.equal(committed.phase, 'paused');
+      assert.equal(committed.game.phase, 'idle');
       assert.equal(committed.message, 'Ready for a local rehearsal');
       assert.deepEqual(await operator.next(), committed);
       assert.deepEqual(await obs.next(), committed);
@@ -197,7 +197,7 @@ test('invalid commands and oversized bodies do not change state or echo private 
   for (const body of [
     null,
     {},
-    { ...command(original), phase: 'voting' },
+    { ...command(original), action: 'resolve-choice' },
     command(original, ' '),
     command(original, 'x'.repeat(161)),
     { ...command(original), operatorNote: privateNote },
@@ -213,13 +213,15 @@ test('invalid commands and oversized bodies do not change state or echo private 
 test('public snapshots and broadcast assets contain neither operator data nor capability', async () => {
   const state = await snapshot(host.obsUrl);
   assert.deepEqual(Object.keys(state).sort(), [
+    'game',
     'integration',
     'message',
-    'phase',
     'revision',
     'sessionId',
     'updatedAt',
   ]);
+  assert.ok(!JSON.stringify(state).includes('legalActions'));
+  assert.ok(!JSON.stringify(state).includes('analysis'));
   for (const path of ['/api/snapshot', '/', '/obs.js', '/styles.css']) {
     const response = await fetch(`${host.obsUrl}${path}`);
     const body = await response.text();

@@ -23,11 +23,10 @@ test('operator publication updates the read-only scene through the host', async 
   );
   const originalRevision = Number(await obs.locator('#revision').innerText());
   await operator.getByLabel('On-air message').fill('The chat takes a seat');
-  await operator.getByLabel('Scene status').selectOption('paused');
   await operator.getByRole('button', { name: 'Publish to scene' }).click();
   await expect(operator.locator('#feedback')).toHaveText('Published by host');
   await expect(obs.locator('#message')).toHaveText('The chat takes a seat');
-  await expect(obs.locator('#phase')).toHaveText('Paused');
+  await expect(obs.locator('#phase')).toHaveText('idle');
   await expect(obs.locator('#revision')).toHaveText(
     String(originalRevision + 1),
   );

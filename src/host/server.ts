@@ -11,6 +11,7 @@ interface HostOptions {
   obsPort: number;
   clientDirectory: string;
   operatorNote?: string;
+  session?: Session;
 }
 
 const securityHeaders = {
@@ -49,7 +50,7 @@ async function close(server: Server) {
 }
 
 export async function startHost(options: HostOptions) {
-  const session = new Session();
+  const session = options.session ?? new Session();
   // Fresh process-local authority; never placed in URLs, OBS assets or logs.
   const capability = randomBytes(32).toString('hex');
   const streams = new Set<ServerResponse>();
@@ -70,6 +71,7 @@ export async function startHost(options: HostOptions) {
       if (!response.write(event)) response.destroy();
     }
   };
+  session.onChange(broadcast);
 
   function handler(surface: 'operator' | 'obs') {
     return async (request: IncomingMessage, response: ServerResponse) => {
@@ -94,6 +96,15 @@ export async function startHost(options: HostOptions) {
           capability,
           operatorNote: options.operatorNote ?? 'Local session controls',
         });
+      }
+      if (
+        surface === 'operator' &&
+        path === '/api/operator/state' &&
+        request.method === 'GET'
+      ) {
+        if (request.headers['x-operator-request'] !== '1')
+          return json(response, 403, { error: 'Operator request required' });
+        return json(response, 200, session.operatorState());
       }
       if (
         surface === 'operator' &&
@@ -134,7 +145,6 @@ export async function startHost(options: HostOptions) {
             return json(response, 409, {
               error: 'Session changed; retry from the latest snapshot',
             });
-          broadcast();
           return json(response, 200, snapshot);
         } catch {
           if (!response.headersSent)
@@ -203,6 +213,7 @@ export async function startHost(options: HostOptions) {
     operatorUrl,
     obsUrl,
     async close() {
+      session.dispose();
       clearInterval(heartbeat);
       for (const response of streams) response.end();
       await Promise.all([close(operator), close(obs)]);

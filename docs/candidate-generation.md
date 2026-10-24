@@ -2,8 +2,8 @@
 
 Issue:
 [fortemate/dicechess-twitch#3](https://github.com/fortemate/dicechess-twitch/issues/3).
-This is a host-side adapter and rules/search proof. It is not connected to the
-scaffold UI, a live game or Twitch yet.
+This host-side adapter is used by the local game machine to prepare frozen chat
+choices. It is not connected to real Twitch voting yet.
 
 ## Integration decision
 

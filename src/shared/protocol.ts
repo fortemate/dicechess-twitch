@@ -1,11 +1,13 @@
+import type { Color, PublicGame } from './game.ts';
+
 /** The only state allowed onto the broadcast transport. No configuration or credentials. */
 export interface PublicSnapshot {
   sessionId: string;
   revision: number;
   updatedAt: string;
-  phase: 'setup' | 'paused';
   message: string;
   integration: 'not-connected';
+  game: PublicGame;
 }
 
 export interface OperatorBootstrap {
@@ -13,23 +15,53 @@ export interface OperatorBootstrap {
   operatorNote: string;
 }
 
-export interface OperatorCommand {
+interface CommandIdentity {
   sessionId: string;
   expectedRevision: number;
-  phase: PublicSnapshot['phase'];
-  message: string;
 }
+
+export type OperatorCommand = CommandIdentity &
+  (
+    | { action: 'set-message'; message: string }
+    | { action: 'start'; streamerColor: Color }
+    | { action: 'move'; uci: string }
+    | { action: 'roll' | 'pause' | 'resume' | 'rematch' }
+  );
 
 export function isOperatorCommand(value: unknown): value is OperatorCommand {
   if (!value || typeof value !== 'object') return false;
   const command = value as Record<string, unknown>;
-  return (
-    Object.keys(command).length === 4 &&
-    typeof command.sessionId === 'string' &&
-    Number.isSafeInteger(command.expectedRevision) &&
-    (command.phase === 'setup' || command.phase === 'paused') &&
-    typeof command.message === 'string' &&
-    command.message.trim().length > 0 &&
-    command.message.length <= 160
-  );
+  if (
+    typeof command.sessionId !== 'string' ||
+    !Number.isSafeInteger(command.expectedRevision)
+  )
+    return false;
+  const keys = Object.keys(command).sort().join(',');
+  switch (command.action) {
+    case 'set-message':
+      return (
+        keys === 'action,expectedRevision,message,sessionId' &&
+        typeof command.message === 'string' &&
+        command.message.trim().length > 0 &&
+        command.message.length <= 160
+      );
+    case 'start':
+      return (
+        keys === 'action,expectedRevision,sessionId,streamerColor' &&
+        (command.streamerColor === 'w' || command.streamerColor === 'b')
+      );
+    case 'move':
+      return (
+        keys === 'action,expectedRevision,sessionId,uci' &&
+        typeof command.uci === 'string' &&
+        /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(command.uci)
+      );
+    case 'roll':
+    case 'pause':
+    case 'resume':
+    case 'rematch':
+      return keys === 'action,expectedRevision,sessionId';
+    default:
+      return false;
+  }
 }
