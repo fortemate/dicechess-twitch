@@ -1,8 +1,25 @@
 # Proposed MVP architecture
 
-Status: implementation proposal selected for the first spike, October 25, 2026. No runtime or
-integration is implemented yet. The [MVP contract](mvp.md) is accepted; technology details can be
-adjusted in the bootstrap issue if a measured integration constraint requires it.
+Status: local transport scaffold implemented October 25, 2026; the game, engine adapter, Twitch,
+voting and persistence sections below remain proposals. The [MVP contract](mvp.md) is accepted.
+See [development](development.md) for verified commands and current limitations.
+
+## Implemented scaffold
+
+One Node.js process binds two loopback listeners: operator on `127.0.0.1:4310`, read-only OBS on
+`127.0.0.1:4311`. Separate client bundles receive the same initial and updated public snapshot via
+SSE. Snapshot projection includes only session ID, revision, timestamp, setup/paused status,
+on-air message and an explicit not-connected integration marker. No game state is simulated.
+
+Only the operator listener exposes bootstrap/command routes. Bootstrap requires a custom request
+header; mutation requires the operator origin, an in-memory capability and the current session
+ID/revision. Host checks reject DNS rebinding; neither listener enables CORS. OBS has no operator
+assets/routes, and its CSP restricts connections to its own origin. This is a local browser boundary,
+not authentication against other software/users on the machine. Do not expose the listeners publicly.
+
+Commands commit synchronously in the host and broadcast one new revision. Stale/repeated commands
+return 409. SSE reconnect returns the latest snapshot. A host restart creates a fresh session and
+capability; the operator must reload. Durable recovery and game resolution remain separate work.
 
 ## Local application
 
