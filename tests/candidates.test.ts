@@ -80,12 +80,16 @@ test(
       ).size,
       3,
     );
-    const strongest = [...result.analysis.scored].sort(
-      (a, b) => b.utility - a.utility,
-    )[0]!;
+    const strongestUtility = Math.max(
+      ...result.analysis.scored.map((turn) => turn.utility),
+    );
     assert.ok(
-      result.choices.some(
-        (choice) => ruleStateKey(choice.resultingDfen) === strongest.ruleKey,
+      result.choices.some((choice) =>
+        result.analysis.scored.some(
+          (turn) =>
+            turn.utility === strongestUtility &&
+            turn.ruleKey === ruleStateKey(choice.resultingDfen),
+        ),
       ),
     );
     assert.ok(
@@ -94,7 +98,7 @@ test(
           result.analysis.scored.find(
             (turn) => turn.ruleKey === ruleStateKey(choice.resultingDfen),
           )!.utility >=
-          strongest.utility - candidatePolicy.qualityMargin,
+          strongestUtility - candidatePolicy.qualityMargin,
       ),
     );
     assert.ok(
