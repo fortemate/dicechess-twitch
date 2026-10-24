@@ -84,9 +84,19 @@ planning documents and canonical shared blocks through explicit exclusions in
 Playwright launches the built host and Chromium. Two checks cover operator
 publication, the OBS revision, read-only DOM, cross-origin isolation, reload
 behavior, the 1920 × 1080 viewport and a real SSE disconnect/reconnect without a
-revision change. They save local screenshots to `test-results/` (gitignored). It
-requires the two default ports to be free. CI runs the same checks on Ubuntu
-with the pinned runtime and installs Chromium's Linux dependencies.
+revision change. They save local screenshots to `test-results/` (gitignored).
+Both default ports must be free. CI runs the same checks on Ubuntu with the
+pinned runtime and installs Chromium's Linux dependencies.
+
+## Verified scaffold run
+
+On October 25, 2026, a clean local Git clone on macOS installed with `npm ci`
+under Node.js 24.22.1/npm 11.19.1. `npm run check` passed all seven Node tests,
+and `npm run test:browser` passed both Chromium checks. The built host was
+launched by the browser suite. A separate `dev` lifecycle check verified initial
+state on both ports, a source edit triggering rebuild/new session, and SIGINT
+closing both listeners. No actual OBS capture, Twitch connection or gameplay
+verification is claimed by this scaffold evidence.
 
 ## Local authority and private configuration
 
