@@ -1,5 +1,6 @@
 import type { Color, PublicGame } from './game.ts';
 import type { TwitchPublicState } from '../twitch/types.ts';
+import type { PublicVoting } from './voting.ts';
 
 /** The only state allowed onto the broadcast transport. No configuration or credentials. */
 export interface PublicSnapshot {
@@ -10,6 +11,7 @@ export interface PublicSnapshot {
   integration: 'not-connected' | 'connected';
   twitch: TwitchPublicState;
   game: PublicGame;
+  voting: PublicVoting;
 }
 
 export interface OperatorBootstrap {
@@ -27,6 +29,7 @@ export type OperatorCommand = CommandIdentity &
     | { action: 'set-message'; message: string }
     | { action: 'start'; streamerColor: Color }
     | { action: 'move'; uci: string }
+    | { action: 'set-vote-duration'; seconds: number }
     | {
         action:
           | 'roll'
@@ -34,7 +37,8 @@ export type OperatorCommand = CommandIdentity &
           | 'resume'
           | 'rematch'
           | 'twitch-connect'
-          | 'twitch-disconnect';
+          | 'twitch-disconnect'
+          | 'extend-vote';
       }
   );
 
@@ -66,12 +70,21 @@ export function isOperatorCommand(value: unknown): value is OperatorCommand {
         typeof command.uci === 'string' &&
         /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(command.uci)
       );
+    case 'set-vote-duration':
+      return (
+        keys === 'action,expectedRevision,seconds,sessionId' &&
+        typeof command.seconds === 'number' &&
+        Number.isInteger(command.seconds) &&
+        command.seconds >= 5 &&
+        command.seconds <= 120
+      );
     case 'roll':
     case 'pause':
     case 'resume':
     case 'rematch':
     case 'twitch-connect':
     case 'twitch-disconnect':
+    case 'extend-vote':
       return keys === 'action,expectedRevision,sessionId';
     default:
       return false;

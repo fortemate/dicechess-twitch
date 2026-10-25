@@ -38,6 +38,11 @@ function updateControls() {
   connect.hidden = !twitch?.canConnect;
   const disconnect = element<HTMLButtonElement>('twitch-disconnect');
   disconnect.hidden = !twitch?.canDisconnect;
+  element<HTMLFieldSetElement>('vote-settings').disabled =
+    !ready() || !controls?.canSetVoteDuration;
+  const extend = element<HTMLButtonElement>('extend-vote');
+  extend.hidden = !controls?.canExtendVote;
+  extend.disabled = !ready();
   const color = element<HTMLSelectElement>('streamer-color');
   color.disabled = !controls?.canStart || !ready();
   if (snapshot && snapshot.game.phase !== 'idle')
@@ -267,4 +272,14 @@ element('twitch-connect').onclick = () => {
 };
 element('twitch-disconnect').onclick = () => {
   void send({ action: 'twitch-disconnect' });
+};
+element('extend-vote').onclick = () => {
+  void send({ action: 'extend-vote' });
+};
+element<HTMLFormElement>('vote-settings-form').onsubmit = (event) => {
+  event.preventDefault();
+  void send({
+    action: 'set-vote-duration',
+    seconds: Number(element<HTMLInputElement>('vote-seconds').value),
+  });
 };

@@ -53,7 +53,8 @@ export class Game {
   #timer: ReturnType<typeof setTimeout> | undefined;
   #animation: Animation | undefined;
   #resolvedRounds = new Set<string>();
-  #announcement = 'Start a local game. Twitch voting is not connected yet.';
+  #announcement =
+    'Start a game. Connect your broadcaster account for chat votes.';
   #winner: Color | null = null;
   #lastTurn: TurnRecord | null = null;
   #pendingPass = false;
@@ -90,7 +91,10 @@ export class Game {
     };
   }
 
-  controls(): Omit<OperatorGameState, 'sessionId' | 'revision'> {
+  controls(): Omit<
+    OperatorGameState,
+    'sessionId' | 'revision' | 'canExtendVote' | 'canSetVoteDuration'
+  > {
     return {
       legalActions:
         this.#phase === 'streamer-turn' ? Object.keys(this.#node) : [],
@@ -433,7 +437,7 @@ export class Game {
         this.#announcement =
           result.choices.length === 1
             ? 'One retained engine choice. It will play automatically.'
-            : 'Choices frozen. Twitch voting integration is pending.';
+            : 'Choices frozen. Review the options before voting opens.';
         this.#changed();
         this.#scheduleSingle();
       })

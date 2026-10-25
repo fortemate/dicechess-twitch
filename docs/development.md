@@ -3,9 +3,10 @@
 The local host runs one in-memory game. The operator freely selects legal
 streamer moves; both browser surfaces render host snapshots. Legal-tree
 preparation and candidate search run in workers. OAuth/EventSub has fixture
-checks; real broadcaster/channel verification, vote collection/timers, complete
-pre-vote presentation and durable recovery are pending. No real secret or
-configuration file is required for local board/candidate work.
+checks and host-owned vote collection/timers are implemented. Real broadcaster/
+channel verification, animated per-choice presentation and durable recovery are
+pending. No real secret or configuration file is required for local
+board/candidate work.
 
 ## Clean start
 
@@ -24,7 +25,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Until the local-game stack is merged:
-git switch feat/twitch-eventsub
+git switch feat/round-voting
 mise trust
 mise install
 mise exec -- npm ci
@@ -64,8 +65,9 @@ npm start
    offers every legal piece; castling uses the king's destination. The host
    automatically handles rolls with no playable move.
 6. Chat rolls once and the worker prepares choices. A single retained choice is
-   explained and auto-played; multiple choices stay at preview while Twitch
-   voting is pending. Pause/resume preserves the board, roll and choices.
+   explained and auto-played. With Twitch healthy, multiple choices open a
+   host-owned poll after preview; without it they remain visible. Pause/resume
+   preserves the board, roll and choices.
 7. Stop the host. Both pages must show disconnection; operator controls become
    disabled.
 8. Restart the host and reload the operator. Both pages show a new session and
@@ -78,6 +80,9 @@ those belong to later rehearsal issues.
 For Twitch setup, follow [the connection guide](twitch-connection.md). A public
 Client ID and explicit broadcaster consent are needed for a real connection;
 fixture tests do not establish that live evidence.
+
+See [voting](voting.md) for duration controls, exact commands, late-event
+admission, empty-poll extension and interruption behavior.
 
 ## Repeatable checks
 

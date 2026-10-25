@@ -7,9 +7,10 @@ the streamer chooses their own legal moves freely.
 ## Current scope and sources
 
 - This repository contains local streamer play, engine candidate preparation and fixture-tested
-  Twitch OAuth/EventSub. Real broadcaster/channel verification and Twitch voting,
-  preview presentation and durable recovery remain separate work. Keep verified startup/checks in
-  `docs/development.md` and implemented game behavior in `docs/game-state.md`; never invent evidence.
+  Twitch OAuth/EventSub plus host-owned vote collection/timers. Real broadcaster/channel
+  verification, animated preview presentation and durable recovery remain separate work. Keep verified startup/checks in
+  `docs/development.md`, game behavior in `docs/game-state.md` and voting policy in
+  `docs/voting.md`; never invent evidence.
 - `docs/mvp.md` owns accepted scope; `docs/architecture.md` distinguishes proposed implementation
   choices from verified behavior. GitHub Issues own unfinished work and dependencies.
 - The Dice Chess Engine owns rules and search. Never reimplement maximum dice consumption by

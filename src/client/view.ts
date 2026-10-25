@@ -47,13 +47,31 @@ export function subscribe(
       const card = document.createElement('div');
       card.className = 'choice';
       const title = document.createElement('strong');
-      title.textContent = `Option ${choice.option}`;
+      const votes = snapshot.voting.counts.find(
+        (count) => count.option === choice.option,
+      )?.votes;
+      title.textContent = `Option ${choice.option}${votes === undefined ? '' : ` · ${votes} votes`}`;
       const moves = document.createElement('span');
       moves.textContent = choice.moves.join(' · ');
       card.append(title, moves);
       return card;
     });
     element('choices').replaceChildren(...cards);
+    const voting = snapshot.voting;
+    element('vote-status').textContent =
+      voting.phase === 'open'
+        ? `Vote now: !vote 1–${snapshot.game.choices.length} · ${Math.ceil(voting.remainingMs / 1000)}s · ${voting.totalVoters} voters`
+        : voting.phase === 'waiting'
+          ? 'No votes received. Waiting for the operator to extend this vote.'
+          : voting.phase === 'paused'
+            ? `Vote paused · ${Math.ceil(voting.remainingMs / 1000)}s saved · ${voting.totalVoters} voters`
+            : voting.phase === 'preview'
+              ? snapshot.twitch.healthy
+                ? 'Review the frozen choices. Voting opens after preview.'
+                : 'Choices ready. Connect Twitch before voting can open.'
+              : voting.lastDecision && voting.phase === 'resolved'
+                ? `Chat chose option ${voting.lastDecision.winner}.`
+                : 'No vote open';
     element('revision').textContent = String(snapshot.revision);
     element('session').textContent = snapshot.sessionId;
     onSnapshot?.(snapshot);

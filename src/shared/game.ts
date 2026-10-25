@@ -49,4 +49,6 @@ export interface OperatorGameState {
   canPause: boolean;
   canResume: boolean;
   canRematch: boolean;
+  canExtendVote: boolean;
+  canSetVoteDuration: boolean;
 }

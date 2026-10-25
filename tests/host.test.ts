@@ -198,6 +198,30 @@ test('invalid commands and oversized bodies do not change state or echo private 
     null,
     {},
     { ...command(original), action: 'resolve-choice' },
+    {
+      sessionId: original.sessionId,
+      expectedRevision: original.revision,
+      action: 'set-vote-duration',
+      seconds: 0,
+    },
+    {
+      sessionId: original.sessionId,
+      expectedRevision: original.revision,
+      action: 'set-vote-duration',
+      seconds: 121,
+    },
+    {
+      sessionId: original.sessionId,
+      expectedRevision: original.revision,
+      action: 'set-vote-duration',
+      seconds: '30',
+    },
+    {
+      sessionId: original.sessionId,
+      expectedRevision: original.revision,
+      action: 'extend-vote',
+      option: 2,
+    },
     command(original, ' '),
     command(original, 'x'.repeat(161)),
     { ...command(original), operatorNote: privateNote },
@@ -220,6 +244,7 @@ test('public snapshots and broadcast assets contain neither operator data nor ca
     'sessionId',
     'twitch',
     'updatedAt',
+    'voting',
   ]);
   assert.ok(!JSON.stringify(state).includes('legalActions'));
   assert.ok(!JSON.stringify(state).includes('analysis'));

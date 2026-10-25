@@ -6,11 +6,15 @@ import type { GameOptions } from './game.ts';
 import { TwitchConnection } from '../twitch/connection.ts';
 import type { SocketFactory } from '../twitch/eventsub.ts';
 import type { ChatMessage } from '../twitch/types.ts';
+import { VotingCoordinator } from '../voting/coordinator.ts';
+import type { VoteDecision } from '../shared/voting.ts';
 
 interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
   twitchClientId?: string;
   twitchFetch?: typeof fetch;
   twitchSocket?: SocketFactory;
+  voteDurationMs?: number;
+  previewMs?: number;
 }
 
 export class Session {
@@ -23,10 +27,18 @@ export class Session {
   #onChange: (() => void) | undefined;
   readonly game: Game;
   readonly twitch: TwitchConnection;
+  readonly voting: VotingCoordinator;
+  #decisions: VoteDecision[] = [];
   #chatListeners = new Set<(message: ChatMessage) => void>();
   constructor(options: SessionOptions = {}) {
-    const { twitchClientId, twitchFetch, twitchSocket, ...gameOptions } =
-      options;
+    const {
+      twitchClientId,
+      twitchFetch,
+      twitchSocket,
+      voteDurationMs,
+      previewMs,
+      ...gameOptions
+    } = options;
     this.game = new Game({
       ...gameOptions,
       sessionId: this.#state.sessionId,
@@ -40,7 +52,19 @@ export class Session {
       interrupted: () => this.game.chatInterrupted(),
       restored: () => this.game.chatRestored(),
       onChat: (message) => {
+        this.voting.accept(message);
         for (const listener of this.#chatListeners) listener(message);
+      },
+    });
+    this.voting = new VotingCoordinator({
+      game: this.game,
+      healthy: () => this.twitch.snapshot().healthy,
+      changed: () => this.#changed(),
+      ...(voteDurationMs !== undefined ? { durationMs: voteDurationMs } : {}),
+      ...(previewMs !== undefined ? { previewMs } : {}),
+      decision: (decision) => {
+        this.#decisions.push(decision);
+        if (this.#decisions.length > 1000) this.#decisions.shift();
       },
     });
   }
@@ -49,11 +73,13 @@ export class Session {
     this.#onChange = listener;
   }
   #changed() {
+    this.voting?.observe();
     this.#state.revision++;
     this.#state.updatedAt = new Date().toISOString();
     this.#onChange?.();
   }
   dispose() {
+    this.voting.dispose();
     this.game.dispose();
     this.twitch.dispose();
     this.#chatListeners.clear();
@@ -61,6 +87,10 @@ export class Session {
   onChat(listener: (message: ChatMessage) => void) {
     this.#chatListeners.add(listener);
     return () => this.#chatListeners.delete(listener);
+  }
+  /** Host-only audit input for durable storage; never includes individual voters. */
+  voteDecisions(): readonly VoteDecision[] {
+    return [...this.#decisions];
   }
   operatorTwitchState() {
     return {
@@ -75,6 +105,8 @@ export class Session {
       sessionId: this.#state.sessionId,
       revision: this.#state.revision,
       ...this.game.controls(),
+      canExtendVote: this.voting.canExtend(),
+      canSetVoteDuration: this.voting.canConfigure(),
     };
   }
 
@@ -91,6 +123,7 @@ export class Session {
         : 'not-connected',
       twitch: this.twitch.snapshot(),
       game: this.game.snapshot(),
+      voting: this.voting.snapshot(),
     };
   }
 
@@ -132,6 +165,12 @@ export class Session {
         break;
       case 'twitch-disconnect':
         accepted = this.twitch.disconnect();
+        break;
+      case 'extend-vote':
+        accepted = this.voting.extend();
+        break;
+      case 'set-vote-duration':
+        accepted = this.voting.setDuration(command.seconds);
         break;
     }
     if (!accepted) return undefined;
