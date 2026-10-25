@@ -121,6 +121,12 @@ npm run test:browser
 git diff --check
 ```
 
+On supported Linux distributions, browser binaries alone are insufficient on a
+clean machine. Use `mise exec -- npx playwright install --with-deps chromium` to
+install Chromium and its required system libraries, matching CI. Installing
+system libraries may require administrator privileges. See
+[Playwright's browser setup](https://playwright.dev/docs/browsers#install-system-dependencies).
+
 `npm test` builds assets and runs Node tests: public engine import/legal-turn
 tree, candidate legality/identity/quality/deadlines and worker responsiveness,
 game transitions/once-only dice and resolution, shared host/SSE state including

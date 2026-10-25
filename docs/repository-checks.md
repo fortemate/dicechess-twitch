@@ -34,9 +34,11 @@ dependency graph/alerts are active. Existing vulnerabilities and version updates
 have different triggers; a weekly schedule is not a security SLA.
 
 `Dependency review / Review dependency changes` rejects newly introduced
-high/critical vulnerabilities on PRs to `main`. It uses GitHub's dependency
-comparison with read-only permission; it does not execute package scripts or
-post comments. It is not a complete audit of unchanged dependencies.
+high/critical vulnerabilities in runtime, development and unknown dependency
+scopes on PRs to `main`. All scopes are explicit because the pinned action
+defaults to runtime-only checks. It uses GitHub's dependency comparison with
+read-only permission; it does not execute package scripts or post comments. It
+is not a complete audit of unchanged dependencies.
 
 ## CodeRabbit
 

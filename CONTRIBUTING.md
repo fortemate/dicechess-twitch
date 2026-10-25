@@ -21,12 +21,17 @@ mise exec -- npm run test:browser
 git diff --check
 ```
 
-Install Chromium with `mise exec -- npx playwright install chromium` first. The
-browser suite uses isolated checkpoints; do not test against another operator's
-saved game. Add meaningful regressions for behavior changes and record what was
-actually checked. Do not call fake chat or accelerated games live Twitch
-evidence. See [repository checks](docs/repository-checks.md) for dependency and
-review configuration.
+Install Chromium with `mise exec -- npx playwright install chromium` first. That
+installs browser binaries only. On supported Linux distributions, install the
+required system libraries as well, using
+`mise exec -- npx playwright install --with-deps chromium`, as CI does. The
+system-dependency step may require administrator privileges. See
+[Playwright's browser setup](https://playwright.dev/docs/browsers#install-system-dependencies).
+The browser suite uses isolated checkpoints; do not test against another
+operator's saved game. Add meaningful regressions for behavior changes and
+record what was actually checked. Do not call fake chat or accelerated games
+live Twitch evidence. See [repository checks](docs/repository-checks.md) for
+dependency and review configuration.
 
 Node/npm upgrades are coordinated changes to `package.json`, `.node-version`,
 `mise.toml` and the lockfile; Dependabot does not perform that migration. Keep
