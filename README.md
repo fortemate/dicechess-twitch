@@ -4,13 +4,12 @@ A streamer plays Dice Chess freely; their Twitch chat chooses between three
 engine-generated complete turns. Built with OpenAI Codex for the
 [Codex x TwitchCon Hackathon](https://twitchcon-codex.devpost.com/).
 
-**Status, October 25, 2026:** local streamer play and engine candidate
-preparation are runnable. The operator can roll and freely choose complete legal
-turns on the board; the host prepares up to three frozen chat choices. Forced
-passes and single retained choices run automatically. Multiple choices wait for
-Twitch voting integration. OAuth/EventSub has fixture-tested code; real-channel
-verification, timed polls, full preview presentation and durable recovery are
-still pending. No submission is implied.
+**Status, October 25, 2026:** local streamer play, engine candidate preparation,
+OAuth/EventSub and host-owned voting are implemented with fixture checks. The
+host freezes up to three complete choices, counts equal votes with changes,
+handles empty polls explicitly and executes the winner once. Actual broadcaster
+consent/channel rehearsal, animated per-choice previews and durable recovery
+remain pending. No submission is implied.
 
 ## The MVP
 
@@ -36,6 +35,8 @@ pretending an audience decision occurred.
   ownership and engine boundary.
 - [Twitch connection](docs/twitch-connection.md): public-client setup, transport
   lifecycle and remaining live verification.
+- [Voting](docs/voting.md): deadline/late-event policy, equal votes, ties and
+  empty-poll recovery.
 - [Game state](docs/game-state.md): implemented controls, transitions and
   limits.
 - [Candidate adapter](docs/candidate-generation.md): evaluation basis,

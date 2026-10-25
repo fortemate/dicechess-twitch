@@ -25,8 +25,8 @@ Keep the issue open until the owner completes and records those checks.
    consent.
 4. Confirm the displayed account is the intended broadcaster and the state
    becomes connected. Send a few messages in that channel. The operator's
-   received-message count should increase. At this stage this proves transport
-   only: vote counting/execution is the next issue, not a completed feature.
+   received-message count should increase. Follow [voting](voting.md) to test
+   actual commands after preview opens a poll; ordinary messages do not vote.
 5. Verify the OBS page has connection health but no activation code/link,
    credential, operator endpoint or mutating control. Record actual connection
    loss/recovery and revocation behavior before calling integration verified.
@@ -86,8 +86,8 @@ Graceful handoff remains healthy. Actual loss/revocation pauses an active game.
 An interrupted preview/vote receives a new round ID while retaining the exact
 board, original dice and choice order. Old resolution callbacks are rejected.
 Connection recovery does not resume gameplay automatically; the operator must
-explicitly resume after health returns. Later voting code must scope its vote
-map/timer to that new round.
+explicitly resume after health returns. The [vote coordinator](voting.md)
+discards the interrupted vote map/timer and opens a fresh poll after preview.
 
 ## Local evidence and remaining work
 
@@ -100,5 +100,5 @@ identity and browser separation of activation versus OBS health.
 
 The production path has no fake-event command or UI. The tests are not a
 substitute for registering the app, broadcaster consent, real chat events or the
-full-game broadcast rehearsal. Live evidence for Issue #5 and vote
-collection/timers for Issue #6 remain unfinished.
+full-game broadcast rehearsal. Live evidence for Issue #5 and the complete
+broadcast rehearsal remain unfinished.

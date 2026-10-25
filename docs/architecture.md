@@ -2,7 +2,8 @@
 
 Status: local transport, streamer gameplay, candidate preparation and game transition hooks
 implemented October 25, 2026. OAuth/EventSub code is locally fixture-tested; real Twitch
-verification, vote collection/timers, pre-vote animation and persistence remain follow-up work. The [MVP contract](mvp.md) is accepted.
+verification, animated per-choice previews and persistence remain follow-up work. Host-owned
+[voting](voting.md) now counts normalized chat events and resolves full turns. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
 
 ## Implemented scaffold
@@ -10,7 +11,7 @@ See [development](development.md) for verified commands and current limitations.
 One Node.js process binds two loopback listeners: operator on `127.0.0.1:4310`, read-only OBS on
 `127.0.0.1:4311`. Separate client bundles receive the same initial and updated public snapshot via
 SSE. Snapshot projection includes session ID, revision, timestamp, on-air message, an explicit
-not-connected Twitch marker and a [public game projection](game-state.md). Legal action controls,
+sanitized Twitch health, vote totals/deadlines and a [public game projection](game-state.md). Legal action controls,
 engine scores and operator configuration stay outside that projection.
 
 Only the operator listener exposes bootstrap/command routes. Bootstrap requires a custom request
@@ -35,9 +36,9 @@ vote map and resolution. Browser views render snapshots; they do not independent
 count down to resolution or apply moves. Restrict mutating controls to the operator session.
 
 Implemented states include streamer roll/preparing/turn, chat roll/preparing, preview, voting,
-resolving, chat animation, paused and game over. Voting/resolution currently have internal service
-hooks tested with explicit fixtures; real vote input and timers are not connected. Multiple chat
-choices stay at preview. Every asynchronous result is scoped to its original job/session/position/
+resolving, chat animation, paused and game over. Voting uses normalized EventSub events, host timers, equal votes with changes, reproducible ties
+and an explicit zero-grace policy. Multiple chat choices wait for a healthy connection, then open
+a poll after the review hold. Local end-to-end checks use explicit Twitch fixtures. Every asynchronous result is scoped to its original job/session/position/
 round; resolution marks the round before animation and rejects repeat callbacks.
 
 ## Engine boundary

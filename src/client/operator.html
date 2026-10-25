@@ -73,6 +73,25 @@
             Select a piece, then a highlighted square. Promotions offer each
             legal piece. The host validates the whole turn.
           </p>
+          <form id="vote-settings-form">
+            <fieldset id="vote-settings" disabled>
+              <label for="vote-seconds">Vote duration (seconds)</label>
+              <input
+                id="vote-seconds"
+                type="number"
+                min="5"
+                max="120"
+                step="1"
+                value="30"
+                required
+              />
+              <button type="submit">Set vote duration</button>
+            </fieldset>
+          </form>
+          <button type="button" id="extend-vote" hidden>
+            Extend empty vote
+          </button>
+          <p id="vote-status" role="status">No vote open</p>
           <form id="broadcast-form">
             <fieldset id="controls" disabled>
               <label for="message-input">On-air message</label
@@ -114,7 +133,7 @@
         </section>
       </div>
       <footer>
-        Local game and engine choices. Real Twitch voting is pending. State
+        Local game and engine choices. Real channel rehearsal is pending. State
         resets on host restart.
       </footer>
     </main>

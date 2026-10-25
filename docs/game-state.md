@@ -4,8 +4,9 @@ Issue:
 [fortemate/dicechess-twitch#4](https://github.com/fortemate/dicechess-twitch/issues/4).
 The operator can start as either color, roll once, play any complete legal
 streamer turn through the board, pause/resume and rematch after game over. The
-host rolls for chat and prepares frozen engine choices. Real Twitch vote
-collection/timers and pre-vote animated previews remain later issues.
+host rolls for chat and prepares frozen engine choices. The
+[vote coordinator](voting.md) now opens/closes healthy polls and submits their
+winning full turn; animated per-choice presentation remains later work.
 
 The [OAuth/EventSub connection](twitch-connection.md) supplies host-only events
 and sanitized health, with real-channel verification still pending.
@@ -19,18 +20,18 @@ accepted command or asynchronous game transition publishes a new host revision.
 The browser renders; it never rolls, searches, validates rules or decides that a
 turn has completed.
 
-| Phase                          | Allowed progression                                                                                                                                                               |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `idle`                         | Start with streamer color.                                                                                                                                                        |
-| `streamer-roll`                | Operator rolls exactly once.                                                                                                                                                      |
-| `streamer-preparing`           | Worker builds the original complete legal turn tree.                                                                                                                              |
-| `streamer-turn`                | Board input follows only children of the retained tree node. A leaf completes the turn; king capture ends the game immediately.                                                   |
-| `chat-roll` / `chat-preparing` | Host rolls once and submits a scoped candidate job.                                                                                                                               |
-| `preview`                      | Original board remains unchanged; choices are frozen. One retained choice is explained and auto-played after a short host delay. Multiple choices await vote-service integration. |
-| `voting`                       | Internal hook for the later poll service; no operator winner-selection command.                                                                                                   |
-| `resolving` / `chat-animation` | Mark the round resolved before scheduling moves. Apply each action once and end the turn, or stop immediately on king capture.                                                    |
-| `paused`                       | Reject moves/rolls/resolution. Stop auto-play/animation timers. Completed preparation can be retained for resume.                                                                 |
-| `game-over`                    | Show winner by king capture; rematch creates a fresh game ID.                                                                                                                     |
+| Phase                          | Allowed progression                                                                                                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idle`                         | Start with streamer color.                                                                                                                                                                         |
+| `streamer-roll`                | Operator rolls exactly once.                                                                                                                                                                       |
+| `streamer-preparing`           | Worker builds the original complete legal turn tree.                                                                                                                                               |
+| `streamer-turn`                | Board input follows only children of the retained tree node. A leaf completes the turn; king capture ends the game immediately.                                                                    |
+| `chat-roll` / `chat-preparing` | Host rolls once and submits a scoped candidate job.                                                                                                                                                |
+| `preview`                      | Original board remains unchanged; choices are frozen. One retained choice is explained and auto-played after a short host delay. Multiple choices open a poll after review when Twitch is healthy. |
+| `voting`                       | Host-owned vote collection/resolution; no operator winner-selection command.                                                                                                                       |
+| `resolving` / `chat-animation` | Mark the round resolved before scheduling moves. Apply each action once and end the turn, or stop immediately on king capture.                                                                     |
+| `paused`                       | Reject moves/rolls/resolution. Stop auto-play/animation timers. Completed preparation can be retained for resume.                                                                                  |
+| `game-over`                    | Show winner by king capture; rematch creates a fresh game ID.                                                                                                                                      |
 
 The MVP uses king capture as the terminal condition. It does not introduce
 checkmate/stalemate or a counter-based automatic draw. No legal move for the
