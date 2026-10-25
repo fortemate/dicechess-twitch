@@ -15,7 +15,7 @@
           <p class="eyebrow">Local session / operator</p>
           <h1>Twitch Plays Dice Chess</h1>
         </div>
-        <span class="pill">Twitch not connected</span>
+        <span class="pill" id="twitch-status">Twitch not connected</span>
       </header>
       <div class="operator-grid">
         <section class="panel on-air" aria-label="Game board">
@@ -38,6 +38,25 @@
           <p class="eyebrow">Operator only</p>
           <h2 id="controls-title">Your table</h2>
           <p class="muted" id="operator-note">Loading local controls…</p>
+          <section aria-label="Twitch connection">
+            <p id="twitch-description" class="hint">
+              Twitch connection is not configured.
+            </p>
+            <fieldset id="twitch-controls" disabled>
+              <button type="button" id="twitch-connect" hidden>
+                Connect Twitch
+              </button>
+              <button type="button" id="twitch-disconnect" hidden>
+                Disconnect Twitch
+              </button>
+            </fieldset>
+            <div id="twitch-activation" class="activation" hidden>
+              <p>Authorization code: <strong id="twitch-code"></strong></p>
+              <a id="twitch-authorize" target="_blank" rel="noreferrer"
+                >Authorize read-only chat on Twitch</a
+              >
+            </div>
+          </section>
           <fieldset id="game-controls" disabled>
             <label for="streamer-color">Streamer plays</label
             ><select id="streamer-color">

@@ -218,6 +218,7 @@ test('public snapshots and broadcast assets contain neither operator data nor ca
     'message',
     'revision',
     'sessionId',
+    'twitch',
     'updatedAt',
   ]);
   assert.ok(!JSON.stringify(state).includes('legalActions'));

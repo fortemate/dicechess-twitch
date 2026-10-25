@@ -6,7 +6,8 @@ the streamer chooses their own legal moves freely.
 
 ## Current scope and sources
 
-- This repository contains local streamer play and engine candidate preparation. Twitch voting,
+- This repository contains local streamer play, engine candidate preparation and fixture-tested
+  Twitch OAuth/EventSub. Real broadcaster/channel verification and Twitch voting,
   preview presentation and durable recovery remain separate work. Keep verified startup/checks in
   `docs/development.md` and implemented game behavior in `docs/game-state.md`; never invent evidence.
 - `docs/mvp.md` owns accepted scope; `docs/architecture.md` distinguishes proposed implementation
