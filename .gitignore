@@ -7,3 +7,5 @@ coverage/
 mise.local.toml
 .local/
 .DS_Store
+playwright-report/
+test-results/

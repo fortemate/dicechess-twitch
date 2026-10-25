@@ -1,0 +1,17 @@
+{
+  "timestampUtc": "2026-10-25T00:41:29.173Z",
+  "runtime": "v24.22.1",
+  "freshRandomRollSessions": 1,
+  "checks": {
+    "sigkillRecovery": true,
+    "staleLockRecovery": true,
+    "exactBoardAndPositionVersion": true,
+    "originalRollRetained": true,
+    "explicitResume": true,
+    "oldCapabilityRejected403": true,
+    "oldSessionRejected409": true,
+    "secondRollRejected409": true,
+    "fullTurnRecordedExactlyOnce": true
+  },
+  "evidence": "Real built CLI, public engine workers and crypto dice; isolated state file. OAuth disabled; no Twitch/OBS broadcast claim."
+}

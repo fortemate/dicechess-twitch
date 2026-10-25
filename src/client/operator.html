@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Operator · Twitch Plays Dice Chess</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/operator.js"></script>
+  </head>
+  <body class="operator">
+    <main>
+      <header class="masthead">
+        <span class="brand-mark" aria-hidden="true">DC</span>
+        <div>
+          <p class="eyebrow">Local session / operator</p>
+          <h1>Twitch Plays Dice Chess</h1>
+        </div>
+        <span class="pill" id="twitch-status">Twitch not connected</span>
+      </header>
+      <div class="operator-grid">
+        <section class="panel on-air" aria-label="Game board">
+          <div class="board-info">
+            <span class="phase" id="phase">Connecting</span
+            ><span id="side">No game started</span
+            ><span class="dice" id="dice">—</span>
+          </div>
+          <div id="board" class="board" aria-label="Chessboard"></div>
+          <p id="preview-caption" class="preview-caption">
+            Current game position
+          </p>
+          <p id="announcement" role="status">Waiting for the local host</p>
+          <div
+            id="promotions"
+            class="promotions"
+            aria-label="Promotion choices"
+          ></div>
+          <p class="hint" id="last-turn"></p>
+          <div id="choices" class="choices"></div>
+        </section>
+        <section class="panel" aria-labelledby="controls-title">
+          <p class="eyebrow">Operator only</p>
+          <h2 id="controls-title">Your table</h2>
+          <p class="muted" id="operator-note">Loading local controls…</p>
+          <section aria-label="Twitch connection">
+            <p id="twitch-description" class="hint">
+              Twitch connection is not configured.
+            </p>
+            <fieldset id="twitch-controls" disabled>
+              <button type="button" id="twitch-connect" hidden>
+                Connect Twitch
+              </button>
+              <button type="button" id="twitch-disconnect" hidden>
+                Disconnect Twitch
+              </button>
+            </fieldset>
+            <div id="twitch-activation" class="activation" hidden>
+              <p>Authorization code: <strong id="twitch-code"></strong></p>
+              <a id="twitch-authorize" target="_blank" rel="noreferrer"
+                >Authorize read-only chat on Twitch</a
+              >
+            </div>
+          </section>
+          <fieldset id="game-controls" disabled>
+            <label for="streamer-color">Streamer plays</label
+            ><select id="streamer-color">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+            <button type="button" id="start">Start game</button
+            ><button type="button" id="roll" hidden>Roll dice</button
+            ><button type="button" id="pause" hidden>Pause game</button
+            ><button type="button" id="resume" hidden>Resume game</button
+            ><button type="button" id="rematch" hidden>Rematch</button>
+            <button type="button" id="retry-save" hidden>Retry save</button>
+          </fieldset>
+          <p class="hint">
+            Select a piece, then a highlighted square. Promotions offer each
+            legal piece. The host validates the whole turn.
+          </p>
+          <form id="vote-settings-form">
+            <fieldset id="vote-settings" disabled>
+              <label for="vote-seconds">Vote duration (seconds)</label>
+              <input
+                id="vote-seconds"
+                type="number"
+                min="5"
+                max="120"
+                step="1"
+                value="30"
+                required
+              />
+              <button type="submit">Set vote duration</button>
+            </fieldset>
+          </form>
+          <button type="button" id="extend-vote" hidden>
+            Extend empty vote
+          </button>
+          <p id="vote-status" role="status">No vote open</p>
+          <form id="broadcast-form">
+            <fieldset id="controls" disabled>
+              <label for="message-input">On-air message</label
+              ><input
+                id="message-input"
+                name="message"
+                maxlength="160"
+                value="One board. A whole chat."
+                required
+              /><button type="submit">
+                Publish to scene <span aria-hidden="true">↗</span>
+              </button>
+            </fieldset>
+            <p class="feedback" id="feedback" role="status">
+              Changes publish through the host.
+            </p>
+          </form>
+          <h2 class="on-air-title" id="message">Waiting for the local host</h2>
+          <p class="connection" id="connection" role="status">
+            Connecting to host…
+          </p>
+          <dl class="metadata">
+            <div>
+              <dt>Revision</dt>
+              <dd id="revision">—</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="session">—</dd>
+            </div>
+          </dl>
+          <p class="hint">
+            OBS browser source:
+            <a href="http://127.0.0.1:4311/" target="_blank" rel="noreferrer"
+              >http://127.0.0.1:4311/</a
+            >
+            · 1920 × 1080
+          </p>
+        </section>
+      </div>
+      <footer>
+        Local game and engine choices. Real channel rehearsal is pending. State
+        restores paused after host restart.
+      </footer>
+      <p id="storage-status" class="storage-status" role="alert" hidden></p>
+    </main>
+  </body>
+</html>

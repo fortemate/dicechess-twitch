@@ -33,7 +33,7 @@ the submission issue use Europe/Riga; they are not encoded by GitHub's date-only
 | Prepare English demo and judging package                 | November 1                                        | QA evidence                              | [fortemate/dicechess-twitch#10](https://github.com/fortemate/dicechess-twitch/issues/10) |
 | Verify judge access and submit                           | November 2 at 22:00                               | Complete judging package; owner action   | [fortemate/dicechess-twitch#11](https://github.com/fortemate/dicechess-twitch/issues/11) |
 
-Planning/bootstrap documentation: [fortemate/dicechess-twitch#12](https://github.com/fortemate/dicechess-twitch/issues/12). Private initiative/catalog update: [fortemate/fortemate-internal#434](https://github.com/fortemate/fortemate-internal/issues/434).
+Planning/bootstrap documentation: [fortemate/dicechess-twitch#12](https://github.com/fortemate/dicechess-twitch/issues/12).
 
 Every task is in Fortemate Engineering with native Issue Type, organization Priority, Execution
 tier, workflow Status, milestone where applicable and native parent/dependency relationships.
