@@ -6,8 +6,8 @@ the streamer chooses their own legal moves freely.
 
 ## Current scope and sources
 
-- This repository currently contains planning documents, not a working application. Do not invent
-  installation commands, test results, a deployed service or a submitted Devpost entry.
+- This repository contains a local application scaffold, not playable Twitch integration. Keep
+  verified startup and checks in `docs/development.md`; never invent Twitch or submission evidence.
 - `docs/mvp.md` owns accepted scope; `docs/architecture.md` distinguishes proposed implementation
   choices from verified behavior. GitHub Issues own unfinished work and dependencies.
 - The Dice Chess Engine owns rules and search. Never reimplement maximum dice consumption by
@@ -19,14 +19,16 @@ the streamer chooses their own legal moves freely.
   during the MVP deadline without an explicit scope decision.
 - Creating issues does not authorize Jules dispatch or external messaging.
 
-## Validation for this documentation-only state
+## Application validation
 
-- Run `git diff --check` and check Markdown formatting with a pinned Prettier version.
-- Resolve local Markdown links and confirm issue/milestone/dependency links against GitHub.
+- Use Node.js/npm pinned by `mise.toml`, `.node-version` and `package.json`; install with `npm ci`.
+- Run `npm run check` (format, strict TypeScript, build, host/engine tests) and
+  `npm run test:browser` (install Chromium with `npx playwright install chromium` first).
+- Run `git diff --check`; confirm modified documentation links and live issue dependencies.
 - Check applicable shared blocks against canonical `fortemate/.github/AGENTS.md` using the
   `agents-shared-blocks` skill before opening a PR that changes this file.
-- The application-bootstrap issue must add real format, typecheck, test and CI commands. Do not
-  record those checks as passing before they exist.
+- Keep OBS resources read-only at the HTTP boundary, not just by hiding controls. Public snapshots
+  use an explicit projection; operator authority and private configuration must never enter it.
 - Stage only named files, use an English conventional commit and a feature branch, and open a PR.
   The owner reviews and merges; do not push tags or publish a site.
 

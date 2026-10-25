@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Operator · Twitch Plays Dice Chess</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/operator.js"></script>
+  </head>
+  <body class="operator">
+    <main>
+      <header class="masthead">
+        <span class="brand-mark" aria-hidden="true">DC</span>
+        <div>
+          <p class="eyebrow">Local session / operator</p>
+          <h1>Twitch Plays Dice Chess</h1>
+        </div>
+        <span class="pill">Application scaffold</span>
+      </header>
+      <div class="operator-grid">
+        <section class="panel on-air" aria-labelledby="preview-title">
+          <p class="eyebrow" id="preview-title">On-air snapshot</p>
+          <p class="phase" id="phase">Connecting</p>
+          <h2 id="message">Waiting for the local host</h2>
+          <p class="muted">Twitch &amp; gameplay are not connected.</p>
+          <p class="connection" id="connection" role="status">
+            Connecting to host…
+          </p>
+          <dl class="metadata">
+            <div>
+              <dt>Revision</dt>
+              <dd id="revision">—</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="session">—</dd>
+            </div>
+          </dl>
+        </section>
+        <section class="panel" aria-labelledby="controls-title">
+          <p class="eyebrow">Operator only</p>
+          <h2 id="controls-title">Prepare the broadcast</h2>
+          <p class="muted" id="operator-note">Loading local controls…</p>
+          <form id="broadcast-form">
+            <fieldset id="controls" disabled>
+              <label for="message-input">On-air message</label>
+              <input
+                id="message-input"
+                name="message"
+                maxlength="160"
+                value="Preparing the table"
+                required
+              />
+              <label for="phase-input">Scene status</label>
+              <select id="phase-input" name="phase">
+                <option value="setup">Setting up</option>
+                <option value="paused">Paused</option>
+              </select>
+              <button type="submit">
+                Publish to scene <span aria-hidden="true">↗</span>
+              </button>
+            </fieldset>
+            <p class="feedback" id="feedback" role="status">
+              Changes publish through the host.
+            </p>
+          </form>
+          <p class="hint">
+            OBS browser source:
+            <a href="http://127.0.0.1:4311/" target="_blank" rel="noreferrer"
+              >http://127.0.0.1:4311/</a
+            >
+            · 1920 × 1080
+          </p>
+        </section>
+      </div>
+      <footer>
+        This scaffold verifies local state delivery. No dice, votes or moves are
+        simulated. Restarting the host resets the session.
+      </footer>
+    </main>
+  </body>
+</html>
