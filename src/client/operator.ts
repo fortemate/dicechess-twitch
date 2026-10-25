@@ -133,6 +133,20 @@ subscribe(
       element('promotions').replaceChildren();
       lastPositionVersion = next.game.positionVersion;
     }
+    if (
+      !snapshot ||
+      snapshot.sessionId !== next.sessionId ||
+      snapshot.message !== next.message
+    )
+      element<HTMLInputElement>('message-input').value = next.message;
+    if (
+      !snapshot ||
+      snapshot.sessionId !== next.sessionId ||
+      snapshot.voting.durationMs !== next.voting.durationMs
+    )
+      element<HTMLInputElement>('vote-seconds').value = String(
+        next.voting.durationMs / 1000,
+      );
     snapshot = next;
     const phase = next.twitch.phase;
     element('twitch-description').textContent =
