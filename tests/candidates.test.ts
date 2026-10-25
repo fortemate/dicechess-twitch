@@ -68,9 +68,20 @@ test(
 
 test(
   'opening yields three complete distinct outcomes, retaining the maximum common-basis score',
-  { timeout: 15000 },
+  { timeout: 30000 },
   async () => {
-    const result = await generateCandidates(request(fixtures.opening));
+    // V8 coverage instruments the public engine too. Preserve the quality
+    // assertions under profiling; the ordinary CI run still uses app deadlines.
+    const options = process.env.NODE_V8_COVERAGE
+      ? {
+          policy: {
+            ...candidatePolicy,
+            softDeadlineMs: 15000,
+            hardDeadlineMs: 20000,
+          },
+        }
+      : {};
+    const result = await generateCandidates(request(fixtures.opening), options);
     assert.equal(result.status, 'ready');
     assert.equal(result.choices.length, 3);
     assertComplete(result);

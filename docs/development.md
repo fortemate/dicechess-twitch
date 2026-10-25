@@ -134,6 +134,10 @@ additional instrumentation dependency. Paths/line coordinates refer to direct
 TypeScript imports; browser execution and bundled workers are not added to that
 coverage. Sonar still counts unreported application files as uncovered. Keep
 coverage reports separate from the fixture-game and live Twitch evidence.
+Coverage test files run serially. V8 profiling also slows the engine dependency,
+so the three-choice quality fixture gets a bounded test-only profiling budget;
+ordinary CI retains the app's default budget and the same three-choice
+assertions. Application deadlines and dedicated timeout tests are unchanged.
 
 `npm test` builds assets and runs Node tests: public engine import/legal-turn
 tree, candidate legality/identity/quality/deadlines and worker responsiveness,
