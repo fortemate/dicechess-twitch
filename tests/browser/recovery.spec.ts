@@ -35,6 +35,7 @@ test('saving failure is visible on OBS and only the operator can retry and resum
       'Saving failed.',
     );
     await expect(operator.locator('#storage-status')).toBeVisible();
+    await expect(operator.locator('#feedback')).toContainText('Saving failed.');
     await expect(
       operator.getByRole('button', { name: 'Publish to scene' }),
     ).toBeDisabled();
@@ -46,6 +47,7 @@ test('saving failure is visible on OBS and only the operator can retry and resum
       .getByRole('button', { name: 'Retry save', exact: true })
       .click();
     await expect(obs.locator('#storage-status')).toBeHidden();
+    await expect(operator.locator('#feedback')).toHaveText('Published by host');
     await expect(obs.locator('#phase')).toHaveText('paused');
     await operator
       .getByRole('button', { name: 'Resume game', exact: true })

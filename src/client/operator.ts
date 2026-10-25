@@ -222,7 +222,10 @@ async function send(action: Action) {
         'Action unavailable or session changed. Review the current board.',
       );
     if (!response.ok) throw new Error('Host rejected this command.');
-    element('feedback').textContent = 'Published by host';
+    const result = (await response.json()) as PublicSnapshot;
+    element('feedback').textContent = result.storage.healthy
+      ? 'Published by host'
+      : 'Saving failed. Retry save before continuing gameplay.';
   } catch (error) {
     element('feedback').textContent =
       error instanceof Error ? error.message : 'Unable to reach host';
