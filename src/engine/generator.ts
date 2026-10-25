@@ -88,6 +88,13 @@ export async function generateCandidates(
         reason: 'cancelled',
         scored: [],
       });
+    const failed = () =>
+      finish({
+        ...latest,
+        status: 'unavailable',
+        reason: 'worker-error',
+        scored: [],
+      });
     const timeout = setTimeout(
       () => finish({ ...latest, reason: 'deadline' }),
       policy.hardDeadlineMs,
@@ -96,9 +103,9 @@ export async function generateCandidates(
       latest = progress;
       if (progress.type === 'done') finish(progress);
     });
-    worker.on('error', () => finish({ ...latest, reason: 'worker-error' }));
+    worker.on('error', failed);
     worker.on('exit', () => {
-      if (!settled) finish({ ...latest, reason: 'worker-error' });
+      if (!settled) failed();
     });
     options.signal?.addEventListener('abort', cancel, { once: true });
     if (options.signal?.aborted) cancel();

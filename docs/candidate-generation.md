@@ -106,6 +106,13 @@ the same basis, and mark the result `deadline`. If none completed, return
 as proof that no legal move exists. Even tree construction itself is protected
 by the worker termination timer, not by the leaf traversal limit.
 
+A worker error or unexpected exit discards the failed job's choices and scores,
+even if it posted progress first. It returns `unavailable` / `worker-error`, so
+the game pauses as an engine failure and retries the same frozen roll on
+explicit resume. Completed-score fallback is reserved for the hard deadline; a
+failed job must not become a retained `ready` checkpoint or a misleading storage
+error.
+
 ## Reproduction and evidence
 
 ```sh
