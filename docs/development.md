@@ -1,7 +1,8 @@
 # Local development
 
 The scaffold runs one in-memory session in a local Node.js host. Two browser
-pages render its snapshots. Twitch/OAuth, engine search, gameplay, voting and
+pages render its snapshots. A standalone public-engine candidate adapter runs in
+a worker; it is not wired into a game yet. Twitch/OAuth, gameplay, voting and
 durable recovery are not implemented. No real secret or configuration file is
 required.
 
@@ -13,11 +14,16 @@ The exact runtime is recorded in `.node-version`, `mise.toml` and
 `mise trust` and `mise install` in this directory, then use `mise exec --`
 before the npm commands when your shell does not activate mise automatically.
 
+The project enables mise's `activate_aggressive` setting so child npm scripts
+also resolve the pinned Node before another Node already on PATH. The build
+checks its actual runtime and fails on a version mismatch. Check child-process
+resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
+
 ```sh
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# Until the scaffold PR is merged:
-git switch feat/application-scaffold
+# Until the candidate adapter stack is merged:
+git switch feat/full-turn-candidates
 mise trust
 mise install
 mise exec -- npm ci
@@ -73,13 +79,18 @@ npm run test:browser
 git diff --check
 ```
 
-`npm test` builds assets and runs seven Node tests: public engine
-import/legal-turn tree, shared host/SSE state including reconnect, OBS route
-isolation, operator origin/capability/host guards, stale/repeated commands,
-input bounds, and public-data projection. `npm run check` combines formatting,
-strict TypeScript and those build/tests. Prettier preserves the inherited
-planning documents and canonical shared blocks through explicit exclusions in
-`.prettierignore`.
+`npm test` builds assets and runs Node tests: public engine import/legal-turn
+tree, candidate legality/identity/quality/deadlines and worker responsiveness,
+shared host/SSE state including reconnect, OBS route isolation, operator
+origin/capability/host guards, stale/repeated commands, input bounds, and
+public-data projection. `npm run check` combines formatting, strict TypeScript
+and those build/tests. Prettier preserves the inherited planning documents and
+canonical shared blocks through explicit exclusions in `.prettierignore`.
+
+The [candidate adapter](candidate-generation.md) is a standalone host module.
+Run `npm run --silent bench:candidates` to repeat the recorded synthetic
+opening/tactical/high-branching measurements. It is not yet connected to the
+operator page or a game session.
 
 Playwright launches the built host and Chromium. Two checks cover operator
 publication, the OBS revision, read-only DOM, cross-origin isolation, reload
@@ -97,6 +108,10 @@ launched by the browser suite. A separate `dev` lifecycle check verified initial
 state on both ports, a source edit triggering rebuild/new session, and SIGINT
 closing both listeners. No actual OBS capture, Twitch connection or gameplay
 verification is claimed by this scaffold evidence.
+
+The candidate follow-up explicitly rechecks the npm child-process runtime.
+Earlier macOS npm child scripts could select another Node already on PATH; the
+project mise setting and build guard prevent that from silently recurring.
 
 ## Local authority and private configuration
 

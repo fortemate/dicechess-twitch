@@ -1,7 +1,7 @@
 # Proposed MVP architecture
 
-Status: local transport scaffold implemented October 25, 2026; the game, engine adapter, Twitch,
-voting and persistence sections below remain proposals. The [MVP contract](mvp.md) is accepted.
+Status: local transport scaffold and a standalone candidate adapter implemented October 25, 2026;
+the game, Twitch, voting and persistence sections below remain proposals. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
 
 ## Implemented scaffold
@@ -40,9 +40,11 @@ version and round ID. Resolution is idempotent.
 
 The public engine owns legal rules and search. Its JS API exposes `getLegalTurnTree` and
 `getBestMove`; the current public declaration returns one best sequence, not a ranked top-three
-list. Live public source was checked on October 25, 2026. The first candidate spike must choose an
-adapter approach and measure it; exposing a small upstream scored-candidate API is an option,
-not an existing capability or authorization to publish an engine release.
+list. The [candidate adapter](candidate-generation.md) now walks that frozen tree, deduplicates
+rule states, includes the public greedy-v2 suggestion, evaluates a bounded diverse sample with
+the same public equity estimator, retains the strongest sampled result and freezes up to three
+numbered options in the parent thread. It runs in a terminable Node worker; no upstream change
+or engine release is needed. Local measurements and limits are recorded in the adapter document.
 
 Candidate results should carry the original position version, complete micro-move sequence,
 resulting rule state and a comparable internal score/quality basis. Deduplicate before display and

@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.ts",
     "test:browser": "playwright test",
+    "bench:candidates": "node scripts/benchmark-candidates.ts",
     "check": "npm run format:check && npm run typecheck && npm test"
   },
   "dependencies": {
