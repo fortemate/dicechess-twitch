@@ -49,6 +49,8 @@ pretending an audience decision occurred.
   rule-state deduplication and worker bounds.
 - [Delivery plan](docs/delivery-plan.md): dated milestones and the
   implementation issue graph.
+- [Broadcast rehearsal](docs/broadcast-rehearsal.md): owner-run live cases,
+  isolated rare-case fixtures and an unfilled evidence template.
 - [Submission checklist](docs/submission.md): judging access, English demo and
   the actual Codex session.
 - [Issues](https://github.com/fortemate/dicechess-twitch/issues) and

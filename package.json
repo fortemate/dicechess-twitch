@@ -19,7 +19,8 @@
     "test": "npm run build && node --test tests/*.test.ts",
     "test:browser": "playwright test",
     "bench:candidates": "node scripts/benchmark-candidates.ts",
-    "check": "npm run format:check && npm run typecheck && npm test"
+    "check": "npm run format:check && npm run typecheck && npm test",
+    "rehearse:fixtures": "npm run build && node tests/rehearsal/host.ts"
   },
   "dependencies": {
     "@fortemate/dicechess-engine": "0.14.9"

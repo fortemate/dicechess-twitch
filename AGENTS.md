@@ -22,6 +22,9 @@ the streamer chooses their own legal moves freely.
 - Candidate order freezes before preview. Deduplicate resulting rule states, not just move strings.
 - Do not add five-choice mode, monetization, tournaments, voice packs or multi-channel hosting
   during the MVP deadline without an explicit scope decision.
+- Real channel/human broadcast evidence remains unfinished. Use `docs/broadcast-rehearsal.md`
+  and its unfilled report template. Rare-case fixed-dice sessions live under `tests/rehearsal/`,
+  must stay visibly non-production and never authorize Twitch or load the operator checkpoint.
 - Creating issues does not authorize Jules dispatch or external messaging.
 
 ## Application validation

@@ -26,7 +26,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Until the local-game stack is merged:
-git switch feat/choice-previews
+git switch test/broadcast-rehearsal
 mise trust
 mise install
 mise exec -- npm ci
@@ -91,6 +91,10 @@ fixture tests do not establish that live evidence.
 See [presentation](presentation.md) for preview state isolation and the checked
 1080p/720p layouts. See [voting](voting.md) for duration controls, exact
 commands, late-event admission, empty-poll extension and interruption behavior.
+
+For the real channel and separate fixed-dice rare-case sessions, follow
+[broadcast rehearsal](broadcast-rehearsal.md). Those fixtures use ports
+4410/4411, never authorize Twitch and do not open the operator's saved game.
 
 ## Repeatable checks
 
