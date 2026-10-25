@@ -61,7 +61,9 @@ export function subscribe(
     element('side').textContent =
       snapshot.game.phase === 'idle'
         ? 'No game started'
-        : `${snapshot.game.dfen.split(' ')[1] === snapshot.game.streamerColor ? 'Streamer' : 'Chat'} to play`;
+        : snapshot.game.phase === 'game-over'
+          ? `${snapshot.game.winner === snapshot.game.streamerColor ? 'Streamer' : 'Chat'} wins`
+          : `${snapshot.game.dfen.split(' ')[1] === snapshot.game.streamerColor ? 'Streamer' : 'Chat'} to play`;
     const display = displayBoard(snapshot);
     element('preview-caption').textContent =
       snapshot.game.phase === 'preview' ||
