@@ -55,14 +55,19 @@ export async function startHost(options: HostOptions) {
   const capability = randomBytes(32).toString('hex');
   const streams = new Set<ServerResponse>();
   const assets = new Map<string, Buffer>();
-  for (const name of [
-    'operator.html',
-    'obs.html',
-    'operator.js',
-    'obs.js',
-    'styles.css',
-  ]) {
-    assets.set(name, await readFile(join(options.clientDirectory, name)));
+  try {
+    for (const name of [
+      'operator.html',
+      'obs.html',
+      'operator.js',
+      'obs.js',
+      'styles.css',
+    ]) {
+      assets.set(name, await readFile(join(options.clientDirectory, name)));
+    }
+  } catch (error: unknown) {
+    session.dispose();
+    throw error;
   }
   const broadcast = () => {
     const event = `data: ${JSON.stringify(session.snapshot())}\n\n`;
@@ -209,6 +214,7 @@ export async function startHost(options: HostOptions) {
     operatorUrl = await listen(operator, options.operatorPort);
     obsUrl = await listen(obs, options.obsPort);
   } catch (error) {
+    session.dispose();
     await Promise.all([close(operator), close(obs)]);
     throw error;
   }

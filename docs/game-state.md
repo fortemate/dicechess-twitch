@@ -81,15 +81,19 @@ assets exist on the OBS listener.
 Public snapshots explicitly project board/roll, phase, position/round IDs,
 winner, last turn and numbered candidate sequences/resulting boards. They do not
 contain the legal tree, legal-action controls, evaluation scores, private
-configuration or authority. OBS has 64 noninteractive board cells and no form or
-button. The operator may click any legal continuation; it cannot replace a
-future chat-vote result.
+configuration or authority. The main OBS board has 64 noninteractive cells, with
+up to three read-only miniatures; OBS has no form or button. The operator may
+click any legal continuation; it cannot replace a future chat-vote result.
 
 The internal `openVoting`/`resolveChoice` hooks are deliberately not operator
 HTTP commands. Their behavior is tested with local orchestration fixtures.
-Multiple choices currently wait at preview; an end-to-end chat-selected game has
-not yet been verified. Persistence is also pending: host restart resets the game
-and requires an operator reload.
+Without a healthy Twitch connection, multiple choices remain at preview.
+Normalized fixture chat verifies end-to-end voting/execution; real broadcaster
+chat is still unverified. [Durable recovery](recovery.md) restores committed
+game state paused, rebuilds the original maximal tree for a partial streamer
+turn and validates retained choices/animation prefixes before continuation. The
+saved current-game history records each completed turn once. A fresh process
+session requires operator reload; interrupted polls reopen under a new round.
 
 ## Verification
 

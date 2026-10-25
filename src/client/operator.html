@@ -71,6 +71,7 @@
             ><button type="button" id="pause" hidden>Pause game</button
             ><button type="button" id="resume" hidden>Resume game</button
             ><button type="button" id="rematch" hidden>Rematch</button>
+            <button type="button" id="retry-save" hidden>Retry save</button>
           </fieldset>
           <p class="hint">
             Select a piece, then a highlighted square. Promotions offer each
@@ -137,8 +138,9 @@
       </div>
       <footer>
         Local game and engine choices. Real channel rehearsal is pending. State
-        resets on host restart.
+        restores paused after host restart.
       </footer>
+      <p id="storage-status" class="storage-status" role="alert" hidden></p>
     </main>
   </body>
 </html>

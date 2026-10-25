@@ -243,6 +243,7 @@ test('public snapshots and broadcast assets contain neither operator data nor ca
     'preview',
     'revision',
     'sessionId',
+    'storage',
     'twitch',
     'updatedAt',
     'voting',

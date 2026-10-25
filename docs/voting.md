@@ -61,8 +61,10 @@ leaders, sorted by option number, using a host-generated random seed and a
 deterministic Mulberry32 draw with rejection sampling. A decision records the
 round, closing deadline, all counts, leaders, seed, selected index and winner.
 Reapplying the recorded algorithm reproduces the selection without any engine
-quality preference. Decisions currently live in bounded host memory and the
-latest public snapshot; durable storage is Issue #8, so restart loses this log.
+quality preference. The CLI [durably checkpoints](recovery.md) the bounded
+decision audit together with the resolved choice/cursor before execution. The
+latest decision is also public; individual voter maps and raw chat are not
+stored.
 
 The poll is marked resolved before the full turn is submitted to `Game`. Game's
 independent round/position/result validation and resolved-round guard reject
@@ -75,12 +77,14 @@ operator can **Extend empty vote**, which opens a fresh window for the same
 ordered choices and configured duration. Waiting does not silently start a bot
 turn or count late messages.
 
-Manual pause preserves admitted votes and remaining duration. Resume opens a new
-delivery window with that remaining duration; messages from the pause gap or
-earlier window are rejected, while already admitted votes remain. Actual Twitch
-loss invalidates the round instead: old votes/timers are discarded,
-choices/dice/board stay fixed, and recovery requires explicit operator resume
-followed by preview and a fresh poll. Graceful socket handoff stays healthy.
+Manual pause in the same running process preserves admitted votes and remaining
+duration. Process restart discards the interrupted poll and requires a fresh
+round. Resume opens a new delivery window with that remaining duration; messages
+from the pause gap or earlier window are rejected, while already admitted votes
+remain. Actual Twitch loss invalidates the round instead: old votes/timers are
+discarded, choices/dice/board stay fixed, and recovery requires explicit
+operator resume followed by preview and a fresh poll. Graceful socket handoff
+stays healthy.
 
 ## Local evidence
 

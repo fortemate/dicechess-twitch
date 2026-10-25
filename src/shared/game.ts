@@ -52,4 +52,5 @@ export interface OperatorGameState {
   canRematch: boolean;
   canExtendVote: boolean;
   canSetVoteDuration: boolean;
+  canRetrySave: boolean;
 }

@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';
 
 // Serialize rebuilds and restart the host only after the preceding build succeeds.
-// Development restarts intentionally create a new in-memory session.
+// Development restarts create new local authority and restore the saved game paused.
 let host;
 let dirty = true;
 let running = false;

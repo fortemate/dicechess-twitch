@@ -45,6 +45,10 @@ export function subscribe(
       return;
     latest = snapshot;
     element('message').textContent = snapshot.message;
+    element('storage-status').hidden = snapshot.storage.healthy;
+    element('storage-status').textContent = snapshot.storage.healthy
+      ? ''
+      : 'Saving failed. Gameplay is paused. The operator must retry saving before play can continue.';
     element('twitch-status').textContent =
       `Twitch: ${snapshot.twitch.phase.replaceAll('-', ' ')}`;
     element('phase').textContent = snapshot.game.phase.replaceAll('-', ' ');

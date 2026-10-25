@@ -33,7 +33,9 @@ Keep the issue open until the owner completes and records those checks.
 6. **Disconnect Twitch** closes the local connection and clears active host
    authorization state. It does not remove the account's grant from Twitch's
    Connections settings. A host restart requires a fresh authorization; no
-   tokens are persisted by this implementation.
+   tokens are persisted by this implementation. The
+   [game checkpoint](recovery.md) is independent and restores the
+   board/roll/choices paused.
 
 No OAuth action occurs on startup or without the operator's Connect command.
 With no Client ID, local board/candidate work remains available and Twitch is

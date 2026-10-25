@@ -10,7 +10,9 @@ import {
   flush,
   packet,
   welcome,
+  fixtureTokens,
 } from './twitch-fixtures.ts';
+import { MemoryStore } from './recovery-fixtures.ts';
 import { twoCandidates, vote, voteFrame } from './voting-fixtures.ts';
 
 test('one equal vote per user follows source chronology, ignoring duplicate and older delivery', () => {
@@ -121,7 +123,9 @@ test('installed-chat fixture resolves exactly one full turn; loss invalidates vo
   context.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 0 });
   const fixture = authFixture();
   const sockets: FakeSocket[] = [];
+  const store = new MemoryStore();
   const session = new Session({
+    store,
     twitchClientId: clientId,
     twitchFetch: fixture.fetcher,
     twitchSocket: () => {
@@ -201,6 +205,18 @@ test('installed-chat fixture resolves exactly one full turn; loss invalidates vo
     assert.equal(session.snapshot().game.lastTurn?.reason, 'chat-choice');
     assert.ok(!JSON.stringify(session.snapshot()).includes('userId'));
     assert.ok(!JSON.stringify(session.snapshot()).includes('messageId'));
+    assert.equal(session.snapshot().storage.healthy, true);
+    assert.deepEqual(store.saved?.decisions, [decision]);
+    const durable = JSON.stringify(store.saved);
+    for (const value of [
+      ...Object.values(fixtureTokens),
+      'ABCD-EFGH',
+      '!vote 2',
+      'userId',
+      'messageId',
+      'utility',
+    ])
+      assert.ok(!durable.includes(value));
   } finally {
     session.dispose();
   }

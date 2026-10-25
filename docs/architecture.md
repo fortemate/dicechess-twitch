@@ -2,7 +2,7 @@
 
 Status: local transport, streamer gameplay, candidate preparation and game transition hooks
 implemented October 25, 2026. OAuth/EventSub code is locally fixture-tested; real Twitch
-verification and persistence remain follow-up work. [Host-owned previews](presentation.md)
+verification remains follow-up work; [durable checkpoints/recovery](recovery.md) are implemented. [Host-owned previews](presentation.md)
 show approved sequences/final boards without changing game state. Host-owned
 [voting](voting.md) now counts normalized chat events and resolves full turns. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
@@ -23,7 +23,9 @@ not authentication against other software/users on the machine. Do not expose th
 
 Accepted commands and asynchronous game transitions advance host revisions. Stale/repeated commands
 return 409. SSE reconnect returns the latest snapshot. A host restart creates a fresh session and
-capability; the operator must reload. Durable recovery remains separate work.
+capability; the operator must reload. A validated checkpoint restores the committed game paused,
+including the original roll, frozen choices and next unplayed animation action. Lost poll votes
+are discarded under a new round ID; OAuth material is never persisted.
 
 ## Local application
 

@@ -9,6 +9,8 @@ import type { ChatMessage } from '../twitch/types.ts';
 import { Preview } from '../presentation/preview.ts';
 import { VotingCoordinator } from '../voting/coordinator.ts';
 import type { VoteDecision } from '../shared/voting.ts';
+import { parseCheckpoint } from './checkpoint.ts';
+import type { CheckpointStore, SessionCheckpoint } from './checkpoint.ts';
 
 interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
   twitchClientId?: string;
@@ -16,6 +18,7 @@ interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
   twitchSocket?: SocketFactory;
   voteDurationMs?: number;
   previewStepMs?: number;
+  store?: CheckpointStore;
 }
 
 export class Session {
@@ -32,6 +35,13 @@ export class Session {
   readonly preview: Preview;
   #decisions: VoteDecision[] = [];
   #chatListeners = new Set<(message: ChatMessage) => void>();
+  #store: CheckpointStore | undefined;
+  #storageError = false;
+  #restored = false;
+  #saving = false;
+  #lastSaved = '';
+  #lastCheckpoint: SessionCheckpoint | undefined;
+  #disposed = false;
   constructor(options: SessionOptions = {}) {
     const {
       twitchClientId,
@@ -39,8 +49,18 @@ export class Session {
       twitchSocket,
       voteDurationMs,
       previewStepMs,
+      store,
       ...gameOptions
     } = options;
+    this.#store = store;
+    let saved: SessionCheckpoint | undefined;
+    try {
+      const loaded = store?.load();
+      saved = loaded ? parseCheckpoint(loaded) : undefined;
+    } catch (error: unknown) {
+      store?.close();
+      throw error;
+    }
     this.game = new Game({
       ...gameOptions,
       externalPreview: true,
@@ -68,19 +88,32 @@ export class Session {
       game: this.game,
       healthy: () => this.twitch.snapshot().healthy,
       changed: () => this.#changed(),
-      ...(voteDurationMs !== undefined ? { durationMs: voteDurationMs } : {}),
+      ...(saved
+        ? { durationMs: saved.voteDurationMs }
+        : voteDurationMs !== undefined
+          ? { durationMs: voteDurationMs }
+          : {}),
       previewReady: (roundId) => this.preview.ready(roundId),
       decision: (decision) => {
         this.#decisions.push(decision);
         if (this.#decisions.length > 1000) this.#decisions.shift();
       },
     });
+    if (saved) {
+      this.#state.message = saved.message;
+      this.#decisions = [...saved.decisions];
+      this.game.restore(saved.game, saved.requiresChat);
+      this.#restored = true;
+      this.preview.observe();
+    }
+    this.#persist();
   }
 
   onChange(listener: () => void) {
     this.#onChange = listener;
   }
   #changed() {
+    if (this.#disposed) return;
     this.preview?.observe();
     const game = this.game.snapshot();
     if (
@@ -92,16 +125,20 @@ export class Session {
       this.game.resolveChoice(game.roundId, game.choices[0]!.option);
     }
     this.voting?.observe();
+    this.#persist();
     this.#state.revision++;
     this.#state.updatedAt = new Date().toISOString();
     this.#onChange?.();
   }
   dispose() {
+    if (this.#disposed) return;
+    this.#disposed = true;
     this.preview.dispose();
     this.voting.dispose();
     this.game.dispose();
     this.twitch.dispose();
     this.#chatListeners.clear();
+    this.#store?.close();
   }
   onChat(listener: (message: ChatMessage) => void) {
     this.#chatListeners.add(listener);
@@ -109,7 +146,7 @@ export class Session {
   }
   /** Host-only audit input for durable storage; never includes individual voters. */
   voteDecisions(): readonly VoteDecision[] {
-    return [...this.#decisions];
+    return structuredClone(this.#decisions);
   }
   operatorTwitchState() {
     return {
@@ -126,6 +163,7 @@ export class Session {
       ...this.game.controls(),
       canExtendVote: this.voting.canExtend(),
       canSetVoteDuration: this.voting.canConfigure(),
+      canRetrySave: this.#storageError,
     };
   }
 
@@ -144,6 +182,11 @@ export class Session {
       game: this.game.snapshot(),
       voting: this.voting.snapshot(),
       preview: this.preview.snapshot(),
+      storage: {
+        enabled: !!this.#store,
+        healthy: !this.#storageError,
+        restored: this.#restored,
+      },
     };
   }
 
@@ -151,6 +194,13 @@ export class Session {
     if (
       command.sessionId !== this.#state.sessionId ||
       command.expectedRevision !== this.#state.revision
+    )
+      return undefined;
+    if (
+      this.#storageError &&
+      !['retry-save', 'twitch-connect', 'twitch-disconnect'].includes(
+        command.action,
+      )
     )
       return undefined;
     let accepted = false;
@@ -192,8 +242,70 @@ export class Session {
       case 'set-vote-duration':
         accepted = this.voting.setDuration(command.seconds);
         break;
+      case 'retry-save':
+        accepted = this.#retrySave();
+        break;
     }
     if (!accepted) return undefined;
     return this.snapshot();
+  }
+
+  checkpoint(): SessionCheckpoint {
+    const game = this.game.checkpoint();
+    return {
+      version: 1,
+      message: this.#state.message,
+      game,
+      voteDurationMs: this.voting.snapshot().durationMs,
+      decisions: structuredClone(this.#decisions),
+      requiresChat: this.twitch.snapshot().healthy || game.chatUnavailable,
+    };
+  }
+  #persist() {
+    if (!this.#store || this.#storageError || this.#saving || this.#disposed)
+      return;
+    this.#saving = true;
+    try {
+      const checkpoint = this.checkpoint();
+      const encoded = JSON.stringify(checkpoint);
+      if (encoded !== this.#lastSaved) {
+        this.#store.save(checkpoint);
+        this.#lastSaved = encoded;
+        this.#lastCheckpoint = structuredClone(checkpoint);
+      }
+    } catch {
+      this.#storageError = true;
+      if (this.#lastCheckpoint) {
+        this.#state.message = this.#lastCheckpoint.message;
+        this.#decisions = structuredClone(
+          this.#lastCheckpoint.decisions,
+        ) as VoteDecision[];
+        this.game.restore(
+          this.#lastCheckpoint.game,
+          this.#lastCheckpoint.requiresChat,
+        );
+        this.preview.observe();
+        this.voting.observe();
+      }
+      this.game.storageBlocked(true);
+      if (this.twitch.snapshot().healthy) this.game.chatRestored();
+    } finally {
+      this.#saving = false;
+    }
+  }
+  #retrySave() {
+    if (!this.#store || !this.#storageError) return false;
+    try {
+      const checkpoint = this.checkpoint();
+      this.#store.save(checkpoint);
+      this.#lastSaved = JSON.stringify(checkpoint);
+      this.#lastCheckpoint = structuredClone(checkpoint);
+      this.#storageError = false;
+      this.game.storageBlocked(false);
+      this.#changed();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

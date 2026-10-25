@@ -14,6 +14,20 @@
   --accent: #cbef75;
   --line: #3a473d;
 }
+.storage-status {
+  position: fixed;
+  bottom: 4vh;
+  left: 3vw;
+  width: 94vw;
+  margin: 0;
+  padding: 20px;
+  border: 2px solid #ffb8a9;
+  border-radius: 8px;
+  background: #611f20;
+  color: #fff;
+  font-size: clamp(18px, 1.5vw, 30px);
+  z-index: 5;
+}
 * {
   box-sizing: border-box;
 }

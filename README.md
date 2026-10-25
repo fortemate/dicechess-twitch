@@ -8,9 +8,10 @@ engine-generated complete turns. Built with OpenAI Codex for the
 OAuth/EventSub and host-owned voting are implemented with fixture checks. The
 host freezes up to three complete choices, counts equal votes with changes,
 handles empty polls explicitly and executes the winner once. Actual broadcaster
-consent/channel rehearsal and durable recovery remain pending. Engine-approved
-animated previews and final-position miniatures are available. No submission is
-implied.
+consent/channel rehearsal remains pending. Durable local recovery restores
+active play paused with its committed board, roll, choices and history.
+Engine-approved animated previews and final-position miniatures are available.
+No submission is implied.
 
 ## The MVP
 
@@ -36,6 +37,8 @@ pretending an audience decision occurred.
   ownership and engine boundary.
 - [Twitch connection](docs/twitch-connection.md): public-client setup, transport
   lifecycle and remaining live verification.
+- [Recovery](docs/recovery.md): durable checkpoints, explicit resume and saving
+  failure behavior.
 - [Presentation](docs/presentation.md): host-owned previews, actual final boards
   and the read-only broadcast scene.
 - [Voting](docs/voting.md): deadline/late-event policy, equal votes, ties and
@@ -83,8 +86,9 @@ npm run dev
 Open [operator](http://127.0.0.1:4310/) and [OBS scene](http://127.0.0.1:4311/).
 Publish a message from the operator page; both pages receive the same committed
 revision. Start a game, roll once and select a piece/destination; highlighted
-actions come from the frozen engine tree. State is in memory and resets on host
-restart. Keep both ports local.
+actions come from the frozen engine tree. The CLI saves to `.local/session.json`
+and restores active games paused after restart; reload the operator and resume
+explicitly. Keep both ports local.
 
 `npm run check` runs formatting, strict TypeScript, build and host/engine tests.
 For the real-browser check, run `npx playwright install chromium` and

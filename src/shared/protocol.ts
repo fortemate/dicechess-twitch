@@ -14,6 +14,7 @@ export interface PublicSnapshot {
   game: PublicGame;
   voting: PublicVoting;
   preview: PublicPreview;
+  storage: { enabled: boolean; healthy: boolean; restored: boolean };
 }
 
 export interface OperatorBootstrap {
@@ -40,7 +41,8 @@ export type OperatorCommand = CommandIdentity &
           | 'rematch'
           | 'twitch-connect'
           | 'twitch-disconnect'
-          | 'extend-vote';
+          | 'extend-vote'
+          | 'retry-save';
       }
   );
 
@@ -87,6 +89,7 @@ export function isOperatorCommand(value: unknown): value is OperatorCommand {
     case 'twitch-connect':
     case 'twitch-disconnect':
     case 'extend-vote':
+    case 'retry-save':
       return keys === 'action,expectedRevision,sessionId';
     default:
       return false;

@@ -8,7 +8,8 @@ the streamer chooses their own legal moves freely.
 
 - This repository contains local streamer play, engine candidate preparation and fixture-tested
   Twitch OAuth/EventSub plus host-owned vote collection/timers. Real broadcaster/channel
-  verification and durable recovery remain separate work. Host-owned animated previews and
+  verification remains separate work. Durable checkpoint/recovery code is implemented in
+  `docs/recovery.md`; never persist OAuth/activation material, raw chat or voter maps. Host-owned animated previews and
   final-position miniatures are implemented; see `docs/presentation.md`. Keep verified startup/checks in
   `docs/development.md`, game behavior in `docs/game-state.md` and voting policy in
   `docs/voting.md`; never invent evidence.

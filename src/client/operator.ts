@@ -30,7 +30,7 @@ function ready() {
 }
 function updateControls() {
   element<HTMLFieldSetElement>('controls').disabled =
-    !authority || !connected || pending;
+    !authority || !connected || pending || !snapshot?.storage.healthy;
   element<HTMLFieldSetElement>('game-controls').disabled = !ready();
   element<HTMLFieldSetElement>('twitch-controls').disabled =
     !authority || !connected || pending;
@@ -39,7 +39,7 @@ function updateControls() {
   const disconnect = element<HTMLButtonElement>('twitch-disconnect');
   disconnect.hidden = !twitch?.canDisconnect;
   element<HTMLFieldSetElement>('vote-settings').disabled =
-    !ready() || !controls?.canSetVoteDuration;
+    !ready() || !controls?.canSetVoteDuration || !snapshot?.storage.healthy;
   const extend = element<HTMLButtonElement>('extend-vote');
   extend.hidden = !controls?.canExtendVote;
   extend.disabled = !ready();
@@ -55,6 +55,7 @@ function updateControls() {
     pause: controls?.canPause,
     resume: controls?.canResume,
     rematch: controls?.canRematch,
+    'retry-save': controls?.canRetrySave,
   })) {
     const button = element<HTMLButtonElement>(id);
     button.disabled = !enabled || !ready();
@@ -264,7 +265,13 @@ element('start').onclick = () => {
   if (color === 'w' || color === 'b')
     void send({ action: 'start', streamerColor: color });
 };
-for (const action of ['roll', 'pause', 'resume', 'rematch'] as const)
+for (const action of [
+  'roll',
+  'pause',
+  'resume',
+  'rematch',
+  'retry-save',
+] as const)
   element(action).onclick = () => {
     void send({ action });
   };

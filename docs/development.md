@@ -1,12 +1,13 @@
 # Local development
 
-The local host runs one in-memory game. The operator freely selects legal
+The CLI runs one durably saved local game. The operator freely selects legal
 streamer moves; both browser surfaces render host snapshots. Legal-tree
 preparation and candidate search run in workers. OAuth/EventSub has fixture
 checks and host-owned vote collection/timers are implemented. Real broadcaster/
-channel verification and durable recovery are pending. Host-owned animated
-previews and final-position miniatures are implemented. No real secret or
-configuration file is required for local board/candidate work.
+channel verification remains pending; [durable recovery](recovery.md) is
+implemented. Host-owned animated previews and final-position miniatures are
+implemented. No real secret or configuration file is required for local
+board/candidate work.
 
 ## Clean start
 
@@ -37,11 +38,14 @@ The private repository requires GitHub access. Installation downloads public npm
 packages; no private registry or token is required. If managing Node manually,
 install the exact versions above and omit `mise exec --`.
 
-Development rebuilds `src/` changes and restarts the host. Restart resets state,
-creates a new session ID and requires reloading the operator page to obtain new
-local authority. Reloading only OBS preserves the host session.
+Development rebuilds `src/` changes and restarts the host. Restart creates a new
+process session/authority and restores the committed game paused from
+`.local/session.json`. Reload the operator, reconnect Twitch if required and
+resume explicitly. Reloading only OBS preserves the host session and preview.
 Config/build-script changes require restarting `npm run dev`. Ctrl-C stops both
-local listeners. Ports 4310 and 4311 must be free.
+listeners and releases the checkpoint lock. Ports 4310 and 4311 must be free.
+`DICECHESS_STATE_FILE` can select another local checkpoint; preserve existing
+state rather than deleting it as a troubleshooting step.
 
 For a built run without file watching:
 
@@ -60,7 +64,8 @@ npm start
    host.
 4. Reload OBS. It must still show revision 1, with no form, button or operator
    note.
-5. Choose the streamer's side and start a game. Roll once, select a piece and
+5. With a fresh checkpoint, choose the streamer's side and start a game. For a
+   restored active game, resume it instead. Roll once, select a piece and
    highlighted destination, and finish all required legal actions. Promotion
    offers every legal piece; castling uses the king's destination. The host
    automatically handles rolls with no playable move.
@@ -71,7 +76,9 @@ npm start
 7. Stop the host. Both pages must show disconnection; operator controls become
    disabled.
 8. Restart the host and reload the operator. Both pages show a new session and
-   revision 0.
+   revision 0, with the committed game/roll/history retained and active play
+   paused. The new process needs fresh Twitch authorization before resuming a
+   previously connected game.
 
 In OBS use a Browser Source URL of `http://127.0.0.1:4311/` at 1920 × 1080.
 Chromium verification does not establish real OBS capture or Twitch evidence;
@@ -122,7 +129,7 @@ save local screenshots to `test-results/` (gitignored). Both default ports must
 be free. CI runs the same checks on Ubuntu with the pinned runtime and installs
 Chromium's Linux dependencies.
 
-## Verified scaffold run
+## Earlier scaffold baseline
 
 On October 25, 2026, a clean local Git clone on macOS installed with `npm ci`
 under Node.js 24.22.1/npm 11.19.1. `npm run check` passed all seven Node tests,
@@ -131,6 +138,10 @@ launched by the browser suite. A separate `dev` lifecycle check verified initial
 state on both ports, a source edit triggering rebuild/new session, and SIGINT
 closing both listeners. No actual OBS capture, Twitch connection or gameplay
 verification is claimed by this scaffold evidence.
+
+That scaffold evidence predates durable recovery. Current storage/restart and
+process-level evidence is recorded in [recovery](recovery.md). Browser checks
+use a unique isolated checkpoint and never open the default operator game file.
 
 The candidate follow-up explicitly rechecks the npm child-process runtime.
 Earlier macOS npm child scripts could select another Node already on PATH; the
@@ -148,7 +159,8 @@ not other processes on the machine.
 
 The public snapshot is an explicit allowlist and never serializes private
 configuration. `.env`, `.env.*`, `mise.local.toml` and `.local/` are gitignored.
-The application does **not** load these files. Twitch uses only the public
+The application does **not** load environment/mise configuration files. It loads
+only the explicit versioned game checkpoint separately. Twitch uses the public
 `TWITCH_CLIENT_ID` launch variable; OAuth tokens remain in host memory. Future
 adapters must retain this separation and must not put tokens or raw
 chat/configuration into broadcast events or errors.

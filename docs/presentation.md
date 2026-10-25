@@ -32,7 +32,9 @@ command. A forced pass has no fabricated miniature or poll.
 Pause stops the frame timer and preserves the displayed frame. Resume repeats
 that frame's normal interval before continuing. An invalidated round discards
 its preview and starts again with the retained choices. Browser reloads join the
-current host frame without restarting its timeline. A preview validation failure
+current host frame without restarting its timeline. A process restart instead
+restores the game paused and replays preview from the root after resume; the
+board, roll and ordered choices stay committed. A preview validation failure
 pauses gameplay and offers retry, rather than displaying an invented outcome.
 
 ## Scene and state

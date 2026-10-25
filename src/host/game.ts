@@ -4,10 +4,11 @@ import type { MoveTree } from '@fortemate/dicechess-engine';
 import { generateCandidates } from '../engine/generator.ts';
 import { legalTurnTree } from '../engine/legal-turns.ts';
 import type {
-  CandidateChoice,
-  CandidateRequest,
-  CandidateResult,
-} from '../engine/types.ts';
+  RetainedCandidates,
+  SavedAnimation,
+  SavedGame,
+} from './saved-game.ts';
+import type { CandidateRequest } from '../engine/types.ts';
 import type {
   Color,
   GamePhase,
@@ -31,12 +32,6 @@ export interface GameOptions {
   externalPreview?: boolean;
 }
 
-interface Animation {
-  choice: CandidateChoice;
-  reason: TurnRecord['reason'];
-  nextIndex: number;
-}
-
 export class Game {
   #options: GameOptions;
   #phase: GamePhase = 'idle';
@@ -49,22 +44,26 @@ export class Game {
   #roundId: string | null = null;
   #node: MoveTree = {};
   #moves: string[] = [];
-  #candidates: CandidateResult | undefined;
+  #candidates: RetainedCandidates | undefined;
   #job: AbortController | undefined;
   #timer: ReturnType<typeof setTimeout> | undefined;
-  #animation: Animation | undefined;
+  #animation: SavedAnimation | undefined;
   #resolvedRounds = new Set<string>();
   #announcement =
     'Start a game. Connect your broadcaster account for chat votes.';
   #winner: Color | null = null;
   #lastTurn: TurnRecord | null = null;
   #pendingPass = false;
-  #failed: 'tree' | 'candidates' | undefined;
+  #failed: 'tree' | 'candidates' | 'choices' | 'animation' | undefined;
   #disposed = false;
   #chatUnavailable = false;
+  #storageBlocked = false;
+  #history: TurnRecord[] = [];
+  #startingDfen: string;
 
   constructor(options: GameOptions) {
     this.#options = options;
+    this.#startingDfen = options.initialDfen ?? initialPosition;
   }
 
   snapshot(): PublicGame {
@@ -94,16 +93,23 @@ export class Game {
 
   controls(): Omit<
     OperatorGameState,
-    'sessionId' | 'revision' | 'canExtendVote' | 'canSetVoteDuration'
+    | 'sessionId'
+    | 'revision'
+    | 'canExtendVote'
+    | 'canSetVoteDuration'
+    | 'canRetrySave'
   > {
     return {
       legalActions:
         this.#phase === 'streamer-turn' ? Object.keys(this.#node) : [],
-      canStart: this.#phase === 'idle',
-      canRoll: this.#phase === 'streamer-roll',
+      canStart: this.#phase === 'idle' && !this.#storageBlocked,
+      canRoll: this.#phase === 'streamer-roll' && !this.#storageBlocked,
       canPause: !['idle', 'paused', 'game-over'].includes(this.#phase),
-      canResume: this.#phase === 'paused' && !this.#chatUnavailable,
-      canRematch: this.#phase === 'game-over',
+      canResume:
+        this.#phase === 'paused' &&
+        !this.#chatUnavailable &&
+        !this.#storageBlocked,
+      canRematch: this.#phase === 'game-over' && !this.#storageBlocked,
     };
   }
 
@@ -112,10 +118,11 @@ export class Game {
     this.#cancelWork();
     this.#gameId = randomUUID();
     this.#streamerColor = streamerColor;
-    this.#dfen = this.#options.initialDfen ?? initialPosition;
+    this.#dfen = this.#startingDfen;
     this.#positionVersion++;
     this.#winner = null;
     this.#lastTurn = null;
+    this.#history = [];
     this.#resolvedRounds.clear();
     this.#resumePhase = null;
     this.#phase = 'idle';
@@ -138,7 +145,11 @@ export class Game {
   }
 
   move(uci: string): boolean {
-    if (this.#phase !== 'streamer-turn' || !Object.hasOwn(this.#node, uci))
+    if (
+      this.#storageBlocked ||
+      this.#phase !== 'streamer-turn' ||
+      !Object.hasOwn(this.#node, uci)
+    )
       return false;
     const next = this.#apply(this.#dfen, uci);
     if (!next) return false;
@@ -173,14 +184,21 @@ export class Game {
     this.#resumePhase = null;
     if (this.#pendingPass) {
       this.#pendingPass = false;
+      this.#failed = undefined;
       this.#finishTurn('forced-pass');
       return true;
     }
     const failed = this.#failed;
     this.#failed = undefined;
+    if (failed === 'tree') this.#phase = 'streamer-preparing';
+    if (failed === 'choices' || failed === 'animation')
+      this.#phase = 'chat-preparing';
     this.#changed();
     if (failed === 'tree') this.#prepareStreamer();
     else if (failed === 'candidates') this.#prepareChat();
+    else if (failed === 'choices' || failed === 'animation')
+      this.#validateRetained(failed === 'animation');
+    else if (this.#phase === 'chat-roll') this.#beginTurn();
     else if (this.#phase === 'chat-animation') this.#scheduleAnimation();
     else this.#scheduleSingle();
     return true;
@@ -230,11 +248,9 @@ export class Game {
     if (!choice.moves.length || final !== choice.resultingDfen) return false;
     this.#resolvedRounds.add(roundId);
     this.#clearTimer();
-    this.#phase = 'resolving';
     this.#announcement = automatic
       ? 'One retained engine choice — playing automatically.'
       : `Chat chose option ${option}.`;
-    this.#changed();
     this.#animation = {
       choice,
       nextIndex: 0,
@@ -249,6 +265,107 @@ export class Game {
   dispose() {
     this.#disposed = true;
     this.#cancelWork();
+  }
+
+  checkpoint(): SavedGame {
+    const set = this.#candidates;
+    return structuredClone({
+      gameId: this.#gameId,
+      startingDfen: this.#startingDfen,
+      dfen: this.#dfen,
+      positionVersion: this.#positionVersion,
+      phase: this.#phase,
+      resumePhase: this.#resumePhase,
+      streamerColor: this.#streamerColor,
+      rolledDfen: this.#rolledDfen,
+      roundId: this.#roundId,
+      moves: this.#moves,
+      candidates: set
+        ? {
+            request: set.request,
+            status: set.status,
+            reason: set.reason,
+            choices: set.choices,
+          }
+        : null,
+      animation: this.#animation ?? null,
+      resolvedRounds: [...this.#resolvedRounds],
+      winner: this.#winner,
+      history: this.#history,
+      pendingPass: this.#pendingPass,
+      chatUnavailable: this.#chatUnavailable,
+    });
+  }
+
+  /** Only a validated local checkpoint may call this. No HTTP state-import route exists. */
+  restore(saved: SavedGame, requiresChat: boolean) {
+    this.#cancelWork();
+    const state = structuredClone(saved);
+    this.#gameId = state.gameId;
+    this.#startingDfen = state.startingDfen;
+    this.#dfen = state.dfen;
+    this.#positionVersion = state.positionVersion;
+    this.#streamerColor = state.streamerColor;
+    this.#rolledDfen = state.rolledDfen;
+    this.#roundId = state.roundId;
+    this.#moves = [...state.moves];
+    this.#candidates = state.candidates ?? undefined;
+    if (this.#candidates)
+      this.#candidates = {
+        ...this.#candidates,
+        request: {
+          ...this.#candidates.request,
+          sessionId: this.#options.sessionId,
+        },
+      };
+    this.#animation = state.animation ?? undefined;
+    this.#resolvedRounds = new Set(state.resolvedRounds);
+    this.#history = [...state.history];
+    this.#lastTurn = this.#history.at(-1) ?? null;
+    this.#winner = state.winner;
+    // A persisted derived pass flag must be rechecked against the original legal tree.
+    this.#pendingPass = false;
+    this.#node = {};
+    this.#failed = undefined;
+    const effective =
+      state.phase === 'paused' ? state.resumePhase : state.phase;
+    this.#chatUnavailable =
+      state.chatUnavailable || requiresChat || effective === 'voting';
+    if (effective === 'idle' || effective === 'game-over') {
+      this.#phase = effective;
+      this.#resumePhase = null;
+      this.#chatUnavailable = false;
+    } else {
+      this.#phase = 'paused';
+      this.#resumePhase = effective;
+      if (this.#animation) {
+        this.#resumePhase = 'chat-animation';
+        this.#failed = 'animation';
+      } else if (effective === 'voting' || effective === 'preview') {
+        this.#renewRound();
+        this.#resumePhase = 'preview';
+        this.#failed = 'choices';
+      } else if (
+        effective === 'streamer-turn' ||
+        effective === 'streamer-preparing'
+      )
+        this.#failed = 'tree';
+      else if (effective === 'chat-preparing')
+        this.#failed = this.#candidates ? 'choices' : 'candidates';
+      else if (effective === 'chat-animation' || effective === 'resolving')
+        this.#failed = 'animation';
+    }
+    this.#announcement =
+      this.#phase === 'paused'
+        ? 'Saved game restored and paused. Reconnect chat if required, then resume explicitly.'
+        : effective === 'game-over'
+          ? `${this.#winner === this.#streamerColor ? 'Streamer' : 'Chat'} wins by king capture.`
+          : 'Saved local session restored.';
+  }
+
+  storageBlocked(blocked: boolean) {
+    this.#storageBlocked = blocked;
+    if (blocked) this.pause();
   }
 
   chatInterrupted() {
@@ -349,7 +466,6 @@ export class Game {
       this.#changed();
     } else {
       this.#setPhase('chat-roll');
-      this.#changed();
       this.#freezeRoll();
       this.#roundId = randomUUID();
       this.#setPhase('chat-preparing');
@@ -378,8 +494,31 @@ export class Game {
           this.#fail('tree');
           return;
         }
-        this.#node = tree;
-        if (!Object.keys(tree).length) {
+        let node = tree;
+        let replay = root;
+        for (const move of this.#moves) {
+          if (!Object.hasOwn(node, move)) {
+            this.#fail('tree');
+            return;
+          }
+          const next = this.#apply(replay, move);
+          if (!next) {
+            this.#fail('tree');
+            return;
+          }
+          replay = next;
+          node = node[move]!;
+        }
+        if (replay !== this.#dfen) {
+          this.#fail('tree');
+          return;
+        }
+        this.#node = node;
+        if (!Object.keys(node).length) {
+          if (this.#moves.length) {
+            this.#fail('tree');
+            return;
+          }
           this.#pass();
           return;
         }
@@ -450,7 +589,111 @@ export class Game {
       });
   }
 
-  #fail(kind: 'tree' | 'candidates') {
+  #validateRetained(animation: boolean) {
+    const root = this.#rolledDfen;
+    const set = this.#candidates;
+    const kind = animation ? 'animation' : 'choices';
+    const forcedPass =
+      !animation && set?.status === 'forced-pass' && !set.choices.length;
+    if (
+      !root ||
+      !set ||
+      (!forcedPass && (set.status !== 'ready' || !set.choices.length))
+    ) {
+      this.#fail(kind);
+      return;
+    }
+    const job = new AbortController();
+    this.#job = job;
+    void (this.#options.tree ?? legalTurnTree)(root, job.signal)
+      .then((tree) => {
+        if (this.#job !== job || job.signal.aborted || this.#disposed) return;
+        this.#job = undefined;
+        if (!tree) {
+          this.#fail(kind);
+          return;
+        }
+        if (forcedPass) {
+          if (Object.keys(tree).length) this.#fail(kind);
+          else this.#pass();
+          return;
+        }
+        for (const choice of set.choices) {
+          let node = tree;
+          let replay = root;
+          for (const move of choice.moves) {
+            if (!Object.hasOwn(node, move)) {
+              this.#fail(kind);
+              return;
+            }
+            const next = this.#apply(replay, move);
+            if (!next) {
+              this.#fail(kind);
+              return;
+            }
+            replay = next;
+            node = node[move]!;
+          }
+          if (!this.#terminal(replay)) replay = Rules.endTurn(replay) ?? '';
+          if (Object.keys(node).length || replay !== choice.resultingDfen) {
+            this.#fail(kind);
+            return;
+          }
+        }
+        if (animation) {
+          const pending = this.#animation;
+          if (
+            !pending ||
+            !this.#roundId ||
+            !this.#resolvedRounds.has(this.#roundId) ||
+            !set.choices.some(
+              (choice) =>
+                choice.option === pending.choice.option &&
+                choice.resultingDfen === pending.choice.resultingDfen &&
+                choice.moves.join(',') === pending.choice.moves.join(','),
+            ) ||
+            pending.nextIndex !== this.#moves.length ||
+            pending.nextIndex >= pending.choice.moves.length ||
+            pending.choice.moves.slice(0, pending.nextIndex).join(',') !==
+              this.#moves.join(',')
+          ) {
+            this.#fail(kind);
+            return;
+          }
+          let replay = root;
+          for (const move of this.#moves)
+            replay = this.#apply(replay, move) ?? '';
+          if (replay !== this.#dfen) {
+            this.#fail(kind);
+            return;
+          }
+          this.#setPhase('chat-animation');
+          this.#announcement =
+            'Saved chat turn validated. Continuing from its next unplayed move.';
+          this.#changed();
+          this.#scheduleAnimation();
+        } else {
+          if (this.#dfen !== root || this.#moves.length) {
+            this.#fail(kind);
+            return;
+          }
+          if (this.#chatUnavailable) this.#renewRound();
+          this.#setPhase('preview');
+          this.#announcement =
+            'Saved choices validated. Replaying preview before a fresh vote.';
+          this.#changed();
+          this.#scheduleSingle();
+        }
+      })
+      .catch(() => {
+        if (this.#job === job && !this.#disposed) {
+          this.#job = undefined;
+          this.#fail(kind);
+        }
+      });
+  }
+
+  #fail(kind: 'tree' | 'candidates' | 'choices' | 'animation') {
     this.#failed = kind;
     if (this.#phase !== 'paused') {
       this.#resumePhase = this.#phase;
@@ -477,7 +720,6 @@ export class Game {
     this.#dfen = next;
     this.#positionVersion++;
     this.#record(reason);
-    this.#changed();
     this.#beginTurn();
   }
 
@@ -491,6 +733,7 @@ export class Game {
       roundId: this.#roundId,
       option: this.#animation?.choice.option ?? null,
     };
+    this.#history.push(this.#lastTurn);
   }
 
   #finishGame(reason: TurnRecord['reason']) {
@@ -531,7 +774,7 @@ export class Game {
       const uci = animation.choice.moves[animation.nextIndex]!;
       const next = this.#apply(this.#dfen, uci);
       if (!next) {
-        this.#fail('candidates');
+        this.#fail('animation');
         return;
       }
       this.#dfen = next;
@@ -547,7 +790,6 @@ export class Game {
         this.#positionVersion++;
         this.#record(animation.reason);
         this.#animation = undefined;
-        this.#changed();
         this.#beginTurn();
       } else {
         this.#changed();
