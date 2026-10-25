@@ -1,4 +1,5 @@
 import type { ScoredTurn } from './types.ts';
+import { compareCodeUnits } from '../shared/order.ts';
 
 /** Exact orientation, unlike the engine's symmetry-class canonicalKey. Clocks
  * are diagnostic in this king-capture MVP; they do not define another card. */
@@ -11,7 +12,7 @@ export function ruleStateKey(dfen: string): string {
   }
   return [
     ...fields.slice(0, 4),
-    [...(fields[6] ?? '')].sort().join('') || '-',
+    [...(fields[6] ?? '')].sort(compareCodeUnits).join('') || '-',
   ].join(' ');
 }
 

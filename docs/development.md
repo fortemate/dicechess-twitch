@@ -118,6 +118,7 @@ npm test
 npm run check
 npx playwright install chromium
 npm run test:browser
+npm run test:coverage
 git diff --check
 ```
 
@@ -126,6 +127,17 @@ clean machine. Use `mise exec -- npx playwright install --with-deps chromium` to
 install Chromium and its required system libraries, matching CI. Installing
 system libraries may require administrator privileges. See
 [Playwright's browser setup](https://playwright.dev/docs/browsers#install-system-dependencies).
+
+`test:coverage` builds first, creates the report directory and runs the Node
+suite with the built-in LCOV reporter. It writes `coverage/lcov.info` without an
+additional instrumentation dependency. Paths/line coordinates refer to direct
+TypeScript imports; browser execution and bundled workers are not added to that
+coverage. Sonar still counts unreported application files as uncovered. Keep
+coverage reports separate from the fixture-game and live Twitch evidence.
+Coverage test files run serially. V8 profiling also slows the engine dependency,
+so the three-choice quality fixture gets a bounded test-only profiling budget;
+ordinary CI retains the app's default budget and the same three-choice
+assertions. Application deadlines and dedicated timeout tests are unchanged.
 
 `npm test` builds assets and runs Node tests: public engine import/legal-turn
 tree, candidate legality/identity/quality/deadlines and worker responsiveness,

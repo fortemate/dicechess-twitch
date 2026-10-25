@@ -2,6 +2,7 @@ import { DiceChess as Rules } from '@fortemate/dicechess-engine/rules';
 import type { SavedGame } from './saved-game.ts';
 import type { VoteDecision } from '../shared/voting.ts';
 import { selectLeader } from '../voting/poll.ts';
+import { compareCodeUnits } from '../shared/order.ts';
 
 export interface SessionCheckpoint {
   version: 1;
@@ -26,7 +27,8 @@ function object(
 ): asserts value is Record<string, unknown> {
   ensure(value && typeof value === 'object' && !Array.isArray(value));
   ensure(
-    Object.keys(value).sort().join(',') === keys.split(',').sort().join(','),
+    Object.keys(value).sort(compareCodeUnits).join(',') ===
+      keys.split(',').sort(compareCodeUnits).join(','),
   );
 }
 function integer(
