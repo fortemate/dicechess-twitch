@@ -11,7 +11,8 @@ process restart report are separate evidence.
 Record the exact commit, date/time/timezone, machine/OS and Node/npm versions in
 [the report template](rehearsal-report-template.md). Review the open PR stack
 before choosing a tested revision; `main` does not yet contain the application.
-Until merge, a fresh checkout can select `test/broadcast-rehearsal`.
+Until merge, a fresh checkout can select `test/full-game-rehearsal`, which also
+contains the operator and multiple-en-passant checkpoint fixes.
 
 Follow [development](development.md): pinned runtime, `npm ci`, `npm run check`,
 Chromium installation and `npm run test:browser`. A clean checkout needs the
@@ -123,6 +124,38 @@ exist in the shell.
 
 These fixtures cover rare mechanics and capture checks. They are not a
 replacement for the real multi-account game, live timing or connection tests.
+
+## Headless complete-game regression
+
+Before arranging human viewers, run the opt-in starting-position check:
+
+```sh
+mise exec -- npm run rehearse:full-game
+```
+
+It plays two isolated games, one per streamer color, using the pinned public
+engine for legal trees and actual ranked chat candidates. A fixture driver
+chooses legal streamer actions; fake OAuth/EventSub and three synthetic numeric
+user IDs exercise voting, replacements and duplicate delivery. Every operator
+command is repeated to verify rejection. Each authoritative transition passes
+through a real, isolated FileStore. No HTTP/OBS listener, real account, Twitch
+network call or production checkpoint is used, regardless of normal launch
+environment variables.
+
+Node test timers accelerate preview, voting and animation; worker searches use
+real time and their watchdog is advanced by elapsed real search time. This does
+not measure real stream delay, wall-clock poll delivery, OBS readability or
+human interaction. Dice streams have fixed fixture seeds, but engine
+tie-breaking and poll seeds can change the resulting game. A seed is not an
+exact game replay.
+
+The terminal prints a unique `.local/rehearsals/full-game-*` evidence directory.
+It retains per-color reports and checkpoints/history, including revision, dirty
+tracked-worktree flag, runtime, winner, turn/poll counts and elapsed time. A
+pause, save error, absent poll, more than 240 turns or four minutes per game
+fails the check; failure reports are retained. The runner always disposes its
+sessions. It is outside the ordinary CI unit-test glob and is a local rehearsal,
+not evidence that Issue #9's real-human Definition of Done is complete.
 
 ## Review outcome
 

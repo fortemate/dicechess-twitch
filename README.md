@@ -97,7 +97,9 @@ explicitly. Keep both ports local.
 
 `npm run check` runs formatting, strict TypeScript, build and host/engine tests.
 For the real-browser check, run `npx playwright install chromium` and
-`npm run test:browser`.
+`npm run test:browser`. `npm run rehearse:full-game` runs two isolated headless
+games with real engine workers, fake Twitch and accelerated timers; reports stay
+in `.local/rehearsals/`.
 
 See [development and verification](docs/development.md) for clean-start, build
 and two-page checks, and [third-party provenance](docs/provenance.md) for the
