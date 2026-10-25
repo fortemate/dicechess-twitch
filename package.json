@@ -17,7 +17,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.ts",
-    "test:coverage": "npm run build && node -e \"require('node:fs').mkdirSync('coverage', { recursive: true })\" && node --experimental-test-coverage --test-coverage-include=\"src/**/*.ts\" --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=coverage/lcov.info --test tests/*.test.ts",
+    "test:coverage": "npm run build && node -e \"require('node:fs').mkdirSync('coverage', { recursive: true })\" && node --test-concurrency=1 --experimental-test-coverage --test-coverage-include=\"src/**/*.ts\" --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=coverage/lcov.info --test tests/*.test.ts",
     "test:browser": "playwright test",
     "bench:candidates": "node scripts/benchmark-candidates.ts",
     "check": "npm run format:check && npm run typecheck && npm test",
