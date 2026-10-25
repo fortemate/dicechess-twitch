@@ -1,0 +1,42 @@
+name: Bug report
+description: Report incorrect application behavior
+type: Bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For vulnerabilities use [private reporting](https://github.com/fortemate/dicechess-twitch/security/advisories/new).
+        Do not include tokens, activation codes, saved games containing personal data or raw chat.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description:
+        Include the commit, OS, Node/npm versions and affected surface.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description:
+        Describe actual and expected behavior; identify fake versus real Twitch
+        input.
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What behavior should the fix restore?
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description:
+        List observable acceptance checks, including a regression when
+        appropriate.
+    validations:
+      required: true

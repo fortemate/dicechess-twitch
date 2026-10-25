@@ -1,0 +1,25 @@
+name: Task
+description: Propose engineering or maintenance work
+type: Task
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Explain why the work is needed and what currently exists.
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: Describe the concrete outcome and scope.
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description: List verifiable conditions for completion.
+    validations:
+      required: true

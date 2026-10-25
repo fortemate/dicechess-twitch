@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+  profile: assertive
+  high_level_summary: false
+  poem: false
+  collapse_walkthrough: true
+  auto_review:
+    # Match the engine's manual-review policy after installing the GitHub app.
+    enabled: false
+    drafts: false
+    base_branches: [main]
+  path_filters:
+    - '!dist/**'
+    - '!node_modules/**'
+    - '!.local/**'
+    - '!coverage/**'
+    - '!test-results/**'
+    - '!playwright-report/**'
+    - '!package-lock.json'
+  tools:
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+  path_instructions:
+    - path: 'src/engine/**'
+      instructions: |
+        Use the public engine's frozen complete-turn tree; isolated micro-move
+        legality does not prove maximal dice consumption. Deduplicate resulting
+        rule states without symmetry merging. Keep up to three meaningful
+        candidates and handle pass, single choice and failure honestly. Bounded
+        sampled estimates are not calibrated probabilities or optimality proofs.
+    - path: 'src/host/**'
+      instructions: |
+        Preserve one authoritative host, once-only rolls/resolution and stale
+        session/position/round rejection. Save before publication; a failed save
+        must roll back and pause. OBS is read-only at the HTTP boundary. Never
+        expose operator capabilities, OAuth material or voter maps in snapshots.
+    - path: 'src/twitch/**'
+      instructions: |
+        Keep credentials host-only and off disk/logs/URLs. Request only read-chat
+        access. Validate official endpoints, stable IDs and original timestamps;
+        deduplicate delivery. Distinguish graceful handoff from actual loss,
+        invalidate interrupted votes and require explicit healthy resume.
+    - path: 'src/client/**'
+      instructions: |
+        Render host snapshots; do not independently roll dice, resolve votes or
+        advance previews. Chat-only updates must preserve form drafts, pending
+        command validity and board pointer gestures. Keep private controls off OBS.
+    - path: 'tests/**'
+      instructions: |
+        Prefer meaningful public-engine/host/browser regressions with isolated
+        checkpoints. Bound searches and asynchronous waits. Fake OAuth/chat,
+        accelerated games and rare-case fixtures are not real Twitch/OBS evidence.
+    - path: 'docs/**'
+      instructions: |
+        Keep implementation, local fixtures and real human broadcast evidence
+        distinct. Do not claim actual consent, footage, judge access, submission
+        or search strength without recorded evidence. Preserve source provenance.
