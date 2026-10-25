@@ -25,6 +25,9 @@ the streamer chooses their own legal moves freely.
 - Real channel/human broadcast evidence remains unfinished. Use `docs/broadcast-rehearsal.md`
   and its unfilled report template. Rare-case fixed-dice sessions live under `tests/rehearsal/`,
   must stay visibly non-production and never authorize Twitch or load the operator checkpoint.
+- `docs/judging/` contains prepared English drafts and the verified primary Codex session ID.
+  The demo footage, real-human game, judge access and submitted state remain unverified; never
+  turn a prepared script, fixture or local screenshot into a live/publication claim.
 - Creating issues does not authorize Jules dispatch or external messaging.
 
 ## Application validation

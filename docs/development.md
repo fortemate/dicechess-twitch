@@ -26,7 +26,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Until the local-game stack is merged:
-git switch test/broadcast-rehearsal
+git switch docs/judging-package
 mise trust
 mise install
 mise exec -- npm ci

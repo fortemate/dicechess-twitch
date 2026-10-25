@@ -1,7 +1,9 @@
 # Submission checklist
 
-Status: preparation plan, October 25, 2026. This repository creation does not establish event
-registration, reviewer access, a working application, a published video or a submitted entry.
+Status: prepared draft, October 25, 2026. Local application/QA and English draft materials
+exist. Real broadcaster consent, live human-game/OBS evidence, recorded demo, judge access and
+Submitted confirmation remain unverified. See the [judging package](judging/README.md).
+
 Package task: [fortemate/dicechess-twitch#10](https://github.com/fortemate/dicechess-twitch/issues/10). Owner action: [fortemate/dicechess-twitch#11](https://github.com/fortemate/dicechess-twitch/issues/11).
 
 ## Dates
@@ -20,12 +22,16 @@ Package task: [fortemate/dicechess-twitch#10](https://github.com/fortemate/dicec
 - [ ] Enter as an eligible individual or team of individuals, not as a company/legal entity.
       A Fortemate repository/brand does not replace the individual entrant's identity.
 - [ ] Run the clean-checkout instructions and complete real Twitch broadcast QA.
-- [ ] Prepare an English description covering features, audience interaction and actual Codex use.
+- [x] Prepare an [English description draft](judging/description.en.md) covering features, audience
+      interaction and actual Codex use; owner review and live-evidence updates remain.
 - [ ] Distinguish pre-existing engine/components from the new work built during the submission window.
 - [ ] Record all source/component/asset provenance and include everything needed to run legally.
-- [ ] Record the actual Codex session ID of the thread in which most implementation happened.
+- [x] Record the [actual primary implementation session](judging/session.md):
+      `01a1700a-00aa-7711-8dd4-530c8182d2ac`, verified from matching desktop/session metadata.
+      Cross-check that same chat before entering the final form.
 - [ ] Prepare an under-three-minute demo showing the project working on Twitch and development
-      with Codex. Confirm footage/music/participant permissions before publication.
+      with Codex. The [2:40 shot/narration plan](judging/demo.en.md) is prepared; actual footage
+      remains missing. Confirm footage/music/participant permissions before publication.
 - [ ] Capture useful Codex development footage during implementation, not only at the end. Make
       the audience choice, its execution and the streamer's response understandable within the demo;
       judges may evaluate only the submitted description, images and video without installing it.

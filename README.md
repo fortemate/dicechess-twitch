@@ -51,6 +51,9 @@ pretending an audience decision occurred.
   implementation issue graph.
 - [Broadcast rehearsal](docs/broadcast-rehearsal.md): owner-run live cases,
   isolated rare-case fixtures and an unfilled evidence template.
+- [Judging package draft](docs/judging/README.md): English description,
+  real-footage shot plan, verified implementation session and run/access
+  checklist.
 - [Submission checklist](docs/submission.md): judging access, English demo and
   the actual Codex session.
 - [Issues](https://github.com/fortemate/dicechess-twitch/issues) and
