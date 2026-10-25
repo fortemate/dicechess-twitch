@@ -2,6 +2,7 @@ import type { Color, PublicGame } from './game.ts';
 import type { TwitchPublicState } from '../twitch/types.ts';
 import type { PublicPreview } from './presentation.ts';
 import type { PublicVoting } from './voting.ts';
+import { compareCodeUnits } from './order.ts';
 
 /** The only state allowed onto the broadcast transport. No configuration or credentials. */
 export interface PublicSnapshot {
@@ -57,7 +58,7 @@ export function isOperatorCommand(value: unknown): value is OperatorCommand {
     !Number.isSafeInteger(command.expectedRevision)
   )
     return false;
-  const keys = Object.keys(command).sort().join(',');
+  const keys = Object.keys(command).sort(compareCodeUnits).join(',');
   switch (command.action) {
     case 'set-message':
       return (

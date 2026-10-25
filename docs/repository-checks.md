@@ -72,16 +72,29 @@ project creation or account consent is performed by the configuration.
    from this repository. Verify the uploaded revision, PR decoration and quality
    gate in SonarQube Cloud. A green scanner job is not proof of a passed gate.
 
-The scan uses a pinned official action and full Git history. It does not execute
-the app, install npm packages or pass the token to the application test job.
+The scan job uses a pinned official action and full Git history. It does not
+execute the app or install npm packages. A preceding job runs
+`npm run test:coverage` with the pinned runtime and no service secrets, then
+uploads only `coverage/lcov.info`. The scan job downloads that report from the
+same workflow run; the token is supplied only to its setup check and scanner.
 Fork and Dependabot PRs skip this credentialed workflow; normal application,
 dependency and managed CodeQL checks remain available. Manual dispatch from a
 feature branch is skipped to avoid attributing branch code to `main`.
 
-No LCOV producer currently exists in this project. The configuration supplies no
-fictional coverage path and excludes no application files merely to improve
-coverage. Establish real source-mapped coverage before treating a coverage gate
-as satisfied. No remote Sonar analysis or gate result is claimed by this setup.
+The LCOV producer is Node's native test coverage reporter, measuring the same
+Node tests against directly imported TypeScript sources. It is not browser
+coverage: client scripts and built worker bundles are not source-mapped into
+this report. Unreported application files remain in Sonar's denominator at zero;
+no application path is excluded to inflate the result. The native Node summary
+covers loaded files only and must not be advertised as whole-project coverage.
+See the [baseline triage](sonar-baseline.md).
+
+Sonar was activated on October 25, 2026. Two analyses of `main` revision
+`f5d34be` succeeded using the existing organizational token; the second
+[computed the Sonar way gate](https://github.com/fortemate/dicechess-twitch/actions/runs/40197014405)
+as passed on new code since the first baseline. That does not clear the existing
+findings or establish measured browser coverage. Subsequent analysis must
+confirm LCOV import and PR decoration at its exact head.
 
 ## Ownership and branch rules
 
