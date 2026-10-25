@@ -84,6 +84,107 @@ test('terminal king capture restores the winner and one history entry, then rema
   }
 });
 
+test('multiple double-push targets save, restore a partial turn and remain in completed history', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dicechess-multiple-ep-'));
+  const file = join(directory, 'session.json');
+  const source = new Session({
+    store: new FileStore(file),
+    tree,
+    roll: () => [1, 1, 1],
+    candidates: pendingCandidates,
+  });
+  let restored: Session | undefined;
+  try {
+    source.game.start('w');
+    source.game.roll();
+    await until(() => source.snapshot().game.phase === 'streamer-turn');
+    assert.equal(source.game.move('e2e4'), true);
+    assert.equal(source.game.move('d2d4'), true);
+    const partial = source.snapshot();
+    assert.equal(partial.storage.healthy, true);
+    assert.equal(partial.game.dfen.split(' ')[3], 'd3e3');
+    source.dispose();
+    let rolls = 0;
+    restored = new Session({
+      store: new FileStore(file),
+      tree,
+      roll: () => {
+        rolls++;
+        return [1, 1, 1];
+      },
+      candidates: twoCandidates,
+      previewStepMs: 10000,
+    });
+    assert.equal(restored.snapshot().game.phase, 'paused');
+    assert.equal(restored.snapshot().game.dfen, partial.game.dfen);
+    assert.equal(restored.snapshot().game.rolledDfen, partial.game.rolledDfen);
+    assert.equal(restored.game.resume(), true);
+    await until(() => restored!.snapshot().game.phase === 'streamer-turn');
+    assert.equal(rolls, 0);
+    assert.equal(restored.game.move('c2c4'), true);
+    await until(() => restored!.snapshot().game.phase === 'preview');
+    assert.equal(rolls, 1, 'only the next chat turn rolls');
+    assert.equal(restored.snapshot().storage.healthy, true);
+    const saved = parseCheckpoint(JSON.parse(readFileSync(file, 'utf8')));
+    assert.equal(saved.game.history.length, 1);
+    assert.deepEqual(saved.game.history[0]!.moves, ['e2e4', 'd2d4', 'c2c4']);
+    assert.equal(saved.game.history[0]!.resultingDfen.split(' ')[3], 'c3d3e3');
+    assert.equal(saved.game.rolledDfen?.split(' ')[3], 'c3d3e3');
+    assert.equal(saved.game.candidates?.choices.length, 2);
+  } finally {
+    source.dispose();
+    restored?.dispose();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('mixed old/new en-passant targets follow engine cleanup; malformed lists remain invalid', async () => {
+  const store = new MemoryStore();
+  const source = new Session({
+    store,
+    tree,
+    initialDfen: '4k3/8/8/p1p5/8/8/3P1P2/4K3 w - a6c6 0 2',
+    roll: () => [1, 1, 1],
+    candidates: pendingCandidates,
+  });
+  try {
+    assert.equal(source.snapshot().storage.healthy, true);
+    const original = source.checkpoint();
+    source.game.start('w');
+    source.game.roll();
+    await until(() => source.snapshot().game.phase === 'streamer-turn');
+    source.game.move('d2d4');
+    source.game.move('f2f4');
+    assert.equal(source.snapshot().game.dfen.split(' ')[3], 'd3f3a6c6');
+    assert.equal(source.snapshot().storage.healthy, true);
+    assert.deepEqual(parseCheckpoint(store.saved), source.checkpoint());
+    source.game.move('d4d5');
+    assert.equal(source.snapshot().storage.healthy, true);
+    assert.equal(
+      source.checkpoint().game.history[0]!.resultingDfen.split(' ')[3],
+      'f3',
+    );
+    for (const target of [
+      'a3a3',
+      'a6a6',
+      'a3b4',
+      'a3b',
+      'a3-',
+      'a3'.repeat(17),
+    ]) {
+      const invalid = structuredClone(original);
+      const fields = invalid.game.startingDfen.split(' ');
+      fields[3] = target;
+      invalid.game.startingDfen = fields.join(' ');
+      assert.throws(() => parseCheckpoint(invalid), {
+        message: 'Saved session is invalid or unsupported',
+      });
+    }
+  } finally {
+    source.dispose();
+  }
+});
+
 test('file checkpoints replace atomically, retain private permissions and reject competing owners/corrupt data', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dicechess-store-'));
   const file = join(directory, 'session.json');

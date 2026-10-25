@@ -63,9 +63,13 @@ function dfen(value: unknown): value is string {
     !['w', 'b'].includes(fields[1]!) ||
     !/^(?:-|K?Q?k?q?)$/.test(fields[2]!) ||
     !fields[2] ||
-    !/^(?:-|[a-h][36])$/.test(fields[3]!)
+    !/^(?:-|(?:[a-h][36]){1,16})$/.test(fields[3]!)
   )
     return false;
+  // Dice Chess can double-push several pawns per turn. Old rank-3 and new
+  // rank-6 targets (or the reverse) can coexist until the engine ends the turn.
+  const targets = fields[3]!.match(/[a-h][36]/g) ?? [];
+  if (new Set(targets).size !== targets.length) return false;
   if (
     ![4, 5].every(
       (index) =>

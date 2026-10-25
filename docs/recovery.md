@@ -21,6 +21,13 @@ decision audit. It stores neither OAuth/activation material nor raw chat,
 individual voter maps or engine score diagnostics. Authorization is still
 host-memory-only and requires a new consent flow after process restart.
 
+DFEN preserves all concatenated en-passant targets from the engine, such as
+`c3d3e3` after three double-pushes. Targets on ranks 3 and 6 can coexist during
+a turn; the engine removes stale targets on turn completion. Checkpoint
+validation accepts bounded distinct target lists and still rejects malformed
+coordinates and inconsistent replay. It does not reduce DFEN to single-target
+orthodox FEN.
+
 Each changed authoritative state is validated, written to a private temporary
 file, flushed, atomically renamed and followed by a directory flush before
 publication or the next move. Identical game checkpoints are not rewritten for
@@ -86,11 +93,12 @@ by silently running an unsaved game.
 ## Local evidence
 
 Node tests cover strict validation, actual filesystem permissions/replacement/
-locking/corrupt-file preservation, partial-turn recovery, forced passes,
-retained choices and round invalidation, animation cursors, terminal history,
-fresh authority, disk failure/rollback and sanitized durable decision records.
-Chromium checks cover disk restart on the same ports, OBS reconnect, operator
-reload/old-capability rejection and visible save failure/retry controls.
+locking/corrupt-file preservation, partial-turn recovery (including multiple
+en-passant targets), forced passes, retained choices and round invalidation,
+animation cursors, terminal history, fresh authority, disk failure/rollback and
+sanitized durable decision records. Chromium checks cover disk restart on the
+same ports, OBS reconnect, operator reload/old-capability rejection and visible
+save failure/retry controls.
 
 The [process rehearsal report](measurements/recovery-local.json) records an
 actual built-CLI SIGKILL/restart with public engine workers and real random
