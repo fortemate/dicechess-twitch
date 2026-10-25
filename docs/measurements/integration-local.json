@@ -1,0 +1,74 @@
+{
+  "kind": "fresh-checkout-fixture-verification",
+  "sourceRevision": "42077d86d82e96227fd0d20a8b1886157be4ed35",
+  "engine": "@fortemate/dicechess-engine@0.14.9",
+  "freshGitHubClone": true,
+  "localCommands": [
+    "mise exec -- npm ci",
+    "mise exec -- npm run rehearse:full-game"
+  ],
+  "ci": {
+    "sourceRevision": "42077d86d82e96227fd0d20a8b1886157be4ed35",
+    "url": "https://github.com/fortemate/dicechess-twitch/actions/runs/40156137088",
+    "nodeTests": 67,
+    "chromiumTests": 13
+  },
+  "games": [
+    {
+      "fixtureOnly": true,
+      "outcome": "passed",
+      "startedAt": "2026-10-25T03:49:31.165Z",
+      "revision": "42077d86d82e96227fd0d20a8b1886157be4ed35",
+      "trackedChanges": false,
+      "node": "v24.22.1",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "streamerColor": "w",
+      "diceSeed": 1,
+      "acceleratedTimers": true,
+      "realPublicEngineWorkers": true,
+      "elapsedMs": 15199,
+      "turns": 20,
+      "polls": 8,
+      "maxChoices": 3,
+      "commands": 38,
+      "sentVotes": 32,
+      "phase": "game-over",
+      "announcement": "Chat wins by king capture.",
+      "storageHealthy": true,
+      "winner": "b",
+      "finalDfen": "8/1Q2k1pp/4P3/1p1p4/8/3r4/P1P1P1PP/4RBR1 b - - 0 10 q"
+    },
+    {
+      "fixtureOnly": true,
+      "outcome": "passed",
+      "startedAt": "2026-10-25T03:49:31.165Z",
+      "revision": "42077d86d82e96227fd0d20a8b1886157be4ed35",
+      "trackedChanges": false,
+      "node": "v24.22.1",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "streamerColor": "b",
+      "diceSeed": 2,
+      "acceleratedTimers": true,
+      "realPublicEngineWorkers": true,
+      "elapsedMs": 9723,
+      "turns": 13,
+      "polls": 4,
+      "maxChoices": 3,
+      "commands": 23,
+      "sentVotes": 16,
+      "phase": "game-over",
+      "announcement": "Chat wins by king capture.",
+      "storageHealthy": true,
+      "winner": "w",
+      "finalDfen": "2bq2nr/3n1ppp/rp2p1R1/pp2p3/7P/1P2P3/P1PP1KP1/R1BQ1B2 w - - 0 7"
+    }
+  ],
+  "limitations": [
+    "OAuth and chat are explicit fixtures; no broadcaster was authorized or real channel verified.",
+    "Preview, voting and animation timers are accelerated; this does not measure stream latency.",
+    "Engine tie-breaking and poll seeds can change outcomes; fixture dice seeds alone are not an exact replay.",
+    "No human-viewer game, OBS/Twitch broadcast, demo publication or judged revision is established."
+  ]
+}

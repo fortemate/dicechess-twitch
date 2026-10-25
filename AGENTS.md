@@ -6,8 +6,13 @@ the streamer chooses their own legal moves freely.
 
 ## Current scope and sources
 
-- This repository currently contains planning documents, not a working application. Do not invent
-  installation commands, test results, a deployed service or a submitted Devpost entry.
+- This repository contains local streamer play, engine candidate preparation and fixture-tested
+  Twitch OAuth/EventSub plus host-owned vote collection/timers. Real broadcaster/channel
+  verification remains separate work. Durable checkpoint/recovery code is implemented in
+  `docs/recovery.md`; never persist OAuth/activation material, raw chat or voter maps. Host-owned animated previews and
+  final-position miniatures are implemented; see `docs/presentation.md`. Keep verified startup/checks in
+  `docs/development.md`, game behavior in `docs/game-state.md` and voting policy in
+  `docs/voting.md`; never invent evidence.
 - `docs/mvp.md` owns accepted scope; `docs/architecture.md` distinguishes proposed implementation
   choices from verified behavior. GitHub Issues own unfinished work and dependencies.
 - The Dice Chess Engine owns rules and search. Never reimplement maximum dice consumption by
@@ -17,16 +22,24 @@ the streamer chooses their own legal moves freely.
 - Candidate order freezes before preview. Deduplicate resulting rule states, not just move strings.
 - Do not add five-choice mode, monetization, tournaments, voice packs or multi-channel hosting
   during the MVP deadline without an explicit scope decision.
+- Real channel/human broadcast evidence remains unfinished. Use `docs/broadcast-rehearsal.md`
+  and its unfilled report template. Rare-case fixed-dice sessions live under `tests/rehearsal/`,
+  must stay visibly non-production and never authorize Twitch or load the operator checkpoint.
+- `docs/judging/` contains prepared English drafts and the verified primary Codex session ID.
+  The demo footage, real-human game, judge access and submitted state remain unverified; never
+  turn a prepared script, fixture or local screenshot into a live/publication claim.
 - Creating issues does not authorize Jules dispatch or external messaging.
 
-## Validation for this documentation-only state
+## Application validation
 
-- Run `git diff --check` and check Markdown formatting with a pinned Prettier version.
-- Resolve local Markdown links and confirm issue/milestone/dependency links against GitHub.
+- Use Node.js/npm pinned by `mise.toml`, `.node-version` and `package.json`; install with `npm ci`.
+- Run `npm run check` (format, strict TypeScript, build, host/engine tests) and
+  `npm run test:browser` (install Chromium with `npx playwright install chromium` first).
+- Run `git diff --check`; confirm modified documentation links and live issue dependencies.
 - Check applicable shared blocks against canonical `fortemate/.github/AGENTS.md` using the
   `agents-shared-blocks` skill before opening a PR that changes this file.
-- The application-bootstrap issue must add real format, typecheck, test and CI commands. Do not
-  record those checks as passing before they exist.
+- Keep OBS resources read-only at the HTTP boundary, not just by hiding controls. Public snapshots
+  use an explicit projection; operator authority and private configuration must never enter it.
 - Stage only named files, use an English conventional commit and a feature branch, and open a PR.
   The owner reviews and merges; do not push tags or publish a site.
 

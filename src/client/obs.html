@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Broadcast · Twitch Plays Dice Chess</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/obs.js"></script>
+  </head>
+  <body class="broadcast">
+    <main>
+      <header class="masthead">
+        <span class="brand-mark" aria-hidden="true">DC</span>
+        <div>
+          <p class="eyebrow">Streamer versus chat</p>
+          <h1>Twitch Plays Dice Chess</h1>
+        </div>
+        <span class="pill" id="twitch-status">Twitch not connected</span>
+      </header>
+      <section class="broadcast-stage" aria-label="Game status">
+        <div class="main-board-wrap">
+          <div id="board" class="board" aria-label="Chessboard"></div>
+          <p id="preview-caption" class="preview-caption">
+            Current game position
+          </p>
+        </div>
+        <div class="broadcast-message">
+          <p class="eyebrow" id="side">One board. A whole chat.</p>
+          <p class="phase" id="phase">Connecting</p>
+          <h2 id="message">Waiting for the local host</h2>
+          <p class="dice" id="dice">—</p>
+          <p id="announcement" role="status">Waiting for the local host</p>
+          <p class="hint" id="last-turn"></p>
+          <div id="choices" class="choices"></div>
+          <p id="vote-status" role="status">No vote open</p>
+          <p class="connection" id="connection" role="status">
+            Connecting to host…
+          </p>
+        </div>
+      </section>
+      <footer class="broadcast-footer">
+        <span>Local host / read-only scene</span
+        ><span>Revision <b id="revision">—</b></span
+        ><span>Session <span id="session">—</span></span>
+      </footer>
+      <p id="storage-status" class="storage-status" role="alert" hidden></p>
+    </main>
+  </body>
+</html>
