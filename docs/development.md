@@ -26,7 +26,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Verified review baseline until the application stack is merged:
-git switch --detach e3515e7fdbc8ab1ab3cab525881ca4cf719a463c
+git switch --detach 42077d86d82e96227fd0d20a8b1886157be4ed35
 mise trust
 mise install
 mise exec -- npm ci
@@ -39,13 +39,16 @@ packages; no private registry or token is required. If managing Node manually,
 install the exact versions above and omit `mise exec --`.
 
 The October 25 review baseline above is
-[PR #31](https://github.com/fortemate/dicechess-twitch/pull/31), including the
-operator form/control and multiple-en-passant checkpoint fixes plus the
-complete-game fixture runner. Its CI passed 64 Node and 13 Chromium checks. The
-earlier `docs/judging-package` branch predates those fixes. `main` currently
-contains only the initial README; the owner must review/merge the stack and
-choose the final judged revision. This pinned checkout is for verification;
-create a feature branch before editing it.
+[PR #38](https://github.com/fortemate/dicechess-twitch/pull/38), including the
+operator input, multiple-en-passant checkpoint and failed-worker fixes plus the
+complete-game fixture runner. Its CI passed 67 Node and 13 Chromium checks. A
+[fresh-checkout fixture report](measurements/integration-local.json) records two
+complete games at this exact revision with real engine workers and fake Twitch.
+It is separate from real broadcaster/human-game verification. The earlier
+`docs/judging-package` branch predates those fixes. `main` currently contains
+only the initial README; the owner must review/merge the stack and choose the
+final judged revision. This pinned checkout is for verification; create a
+feature branch before editing it.
 
 Development rebuilds `src/` changes and restarts the host. Restart creates a new
 process session/authority and restores the committed game paused from

@@ -6,9 +6,10 @@ was verified private on October 25, 2026; judge access and a final judged commit
 are not yet confirmed. The owner must choose/review that revision and provide
 access before treating this as a ready package. `main` currently contains only
 the initial README. The verified review baseline is
-[`e3515e7`](https://github.com/fortemate/dicechess-twitch/pull/31), including
-the operator and multiple-en-passant checkpoint fixes; it is not a final judged
-revision. See [development](../development.md) for verification evidence.
+[`42077d8`](https://github.com/fortemate/dicechess-twitch/pull/38), including
+the operator input, multiple-en-passant checkpoint and failed-worker fixes; it
+is not a final judged revision. See [development](../development.md) for
+verification evidence.
 
 ## Local install and checks
 
@@ -22,7 +23,7 @@ platform/check evidence.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Verified review baseline until the owner selects the judged revision:
-git switch --detach e3515e7fdbc8ab1ab3cab525881ca4cf719a463c
+git switch --detach 42077d86d82e96227fd0d20a8b1886157be4ed35
 mise trust
 mise install
 mise exec -- npm ci
@@ -78,6 +79,9 @@ weights, voices, music or private infrastructure are required. Keep notices with
 source/distribution as applicable.
 
 Local automated results and the built-process restart report are available. The
+[fresh-checkout report](../measurements/integration-local.json) records complete
+20- and 13-turn fixture games at the pinned baseline with real engine workers,
+fake Twitch and accelerated timers. It does not establish a real broadcast. The
 [live report template](../rehearsal-report-template.md) is unfilled, the demo is
 unrecorded and neither YouTube access nor final Submitted status is verified.
 The owner completes [the final checklist](../submission.md), including the
