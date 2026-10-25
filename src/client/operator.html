@@ -25,6 +25,9 @@
             ><span class="dice" id="dice">—</span>
           </div>
           <div id="board" class="board" aria-label="Chessboard"></div>
+          <p id="preview-caption" class="preview-caption">
+            Current game position
+          </p>
           <p id="announcement" role="status">Waiting for the local host</p>
           <div
             id="promotions"
@@ -99,7 +102,7 @@
                 id="message-input"
                 name="message"
                 maxlength="160"
-                value="Preparing the table"
+                value="One board. A whole chat."
                 required
               /><button type="submit">
                 Publish to scene <span aria-hidden="true">↗</span>

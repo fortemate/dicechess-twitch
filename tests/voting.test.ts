@@ -132,7 +132,7 @@ test('installed-chat fixture resolves exactly one full turn; loss invalidates vo
     initialDfen: fixtures.two.split(' ').slice(0, 6).join(' '),
     roll: () => [1, 1, 1],
     candidates: twoCandidates,
-    previewMs: 10,
+    previewStepMs: 10,
     voteDurationMs: 5000,
     animationStepMs: 1,
   });
@@ -151,7 +151,12 @@ test('installed-chat fixture resolves exactly one full turn; loss invalidates vo
     assert.equal(session.voting.setDuration(10), false);
     sockets[0]!.receive(voteFrame(vote(Date.now())));
     assert.equal(session.snapshot().voting.totalVoters, 0);
-    context.mock.timers.tick(10);
+    for (
+      let step = 0;
+      step < 30 && session.snapshot().voting.phase !== 'open';
+      step++
+    )
+      context.mock.timers.tick(10);
     assert.equal(session.snapshot().voting.phase, 'open');
     const choices = session.snapshot().game.choices;
     const roundId = session.snapshot().game.roundId!;
@@ -175,7 +180,12 @@ test('installed-chat fixture resolves exactly one full turn; loss invalidates vo
     await flush();
     assert.equal(session.snapshot().game.phase, 'paused');
     session.game.resume();
-    context.mock.timers.tick(10);
+    for (
+      let step = 0;
+      step < 30 && session.snapshot().voting.phase !== 'open';
+      step++
+    )
+      context.mock.timers.tick(10);
     assert.equal(session.snapshot().voting.phase, 'open');
     assert.deepEqual(session.snapshot().game.choices, choices);
     sockets[1]!.receive(voteFrame(vote(Date.now(), 2)));

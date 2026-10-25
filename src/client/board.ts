@@ -30,9 +30,11 @@ export function renderBoard(
     selected?: string;
     actions?: readonly string[];
     disabled?: boolean;
+    marks?: readonly string[];
   } = {},
 ) {
   const placement = dfen.split(' ')[0]!;
+  container.dataset.dfen = dfen;
   const squares = placement
     .replace(/\d/g, (count) => '.'.repeat(Number(count)))
     .replaceAll('/', '');
@@ -55,6 +57,7 @@ export function renderBoard(
           uci.startsWith(options.selected!) && uci.slice(2, 4) === square,
       );
     cell.className = `square ${(row + file) % 2 ? 'dark' : 'light'}${options.selected === square ? ' selected' : ''}${target ? ' target' : ''}`;
+    if (options.marks?.includes(square)) cell.classList.add('trace');
     cell.dataset.square = square;
     cell.textContent = symbols[piece] ?? '';
     cell.setAttribute(

@@ -7,7 +7,7 @@ interface Options {
   game: Game;
   healthy: () => boolean;
   changed: () => void;
-  previewMs?: number;
+  previewReady: (roundId: string) => boolean;
   durationMs?: number;
   decision?: (decision: VoteDecision) => void;
 }
@@ -19,7 +19,6 @@ export class VotingCoordinator {
   #durationMs: number;
   #lastDecision: VoteDecision | null = null;
   #timer: ReturnType<typeof setTimeout> | undefined;
-  #previewRound: string | undefined;
   #disposed = false;
   constructor(options: Options) {
     this.#options = options;
@@ -82,49 +81,24 @@ export class VotingCoordinator {
     const game = this.#options.game.snapshot();
     if (this.#poll && this.#poll.roundId !== game.roundId)
       this.#poll = undefined;
-    if (
-      this.#previewRound &&
-      (game.phase !== 'preview' || game.roundId !== this.#previewRound)
-    ) {
-      this.#previewRound = undefined;
-      this.#clearTimer();
-    }
     if (game.phase === 'paused' || !this.#options.healthy()) {
       this.#poll?.pause(Date.now());
-      this.#previewRound = undefined;
       this.#clearTimer();
       return;
     }
     if (game.phase === 'preview' && game.choices.length > 1 && game.roundId) {
-      if (this.#previewRound === game.roundId) return;
-      const roundId = game.roundId;
-      this.#previewRound = roundId;
-      this.#clearTimer();
-      // This pre-vote hold is replaced by the animated host preview in Issue #7.
-      this.#timer = setTimeout(() => {
-        this.#timer = undefined;
-        this.#previewRound = undefined;
-        const current = this.#options.game.snapshot();
-        if (
-          this.#disposed ||
-          !this.#options.healthy() ||
-          current.phase !== 'preview' ||
-          current.roundId !== roundId
-        )
-          return;
-        this.#poll = new Poll(
-          roundId,
-          current.choices.map((choice) => choice.option),
-          Date.now(),
-          this.#durationMs,
-        );
-        if (!this.#options.game.openVoting(roundId)) {
-          this.#poll = undefined;
-          return;
-        }
-        this.#options.changed();
-        this.#schedule();
-      }, this.#options.previewMs ?? 4500);
+      if (!this.#options.previewReady(game.roundId)) return;
+      this.#poll = new Poll(
+        game.roundId,
+        game.choices.map((choice) => choice.option),
+        Date.now(),
+        this.#durationMs,
+      );
+      if (!this.#options.game.openVoting(game.roundId)) {
+        this.#poll = undefined;
+        return;
+      }
+      this.#schedule();
       return;
     }
     if (game.phase === 'voting' && this.#poll) {

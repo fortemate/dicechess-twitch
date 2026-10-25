@@ -28,6 +28,7 @@ export interface GameOptions {
   initialDfen?: string;
   autoplayDelayMs?: number;
   animationStepMs?: number;
+  externalPreview?: boolean;
 }
 
 interface Animation {
@@ -488,6 +489,7 @@ export class Game {
       resultingDfen: this.#dfen,
       reason,
       roundId: this.#roundId,
+      option: this.#animation?.choice.option ?? null,
     };
   }
 
@@ -505,6 +507,7 @@ export class Game {
 
   #scheduleSingle() {
     if (
+      this.#options.externalPreview ||
       this.#phase !== 'preview' ||
       this.#candidates?.choices.length !== 1 ||
       this.#timer

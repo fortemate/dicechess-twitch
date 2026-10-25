@@ -22,6 +22,7 @@ export interface TurnRecord {
   resultingDfen: string;
   reason: 'streamer' | 'chat-choice' | 'single-choice' | 'forced-pass';
   roundId: string | null;
+  option: number | null;
 }
 
 export interface PublicGame {

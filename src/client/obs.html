@@ -18,7 +18,12 @@
         <span class="pill" id="twitch-status">Twitch not connected</span>
       </header>
       <section class="broadcast-stage" aria-label="Game status">
-        <div id="board" class="board" aria-label="Chessboard"></div>
+        <div class="main-board-wrap">
+          <div id="board" class="board" aria-label="Chessboard"></div>
+          <p id="preview-caption" class="preview-caption">
+            Current game position
+          </p>
+        </div>
         <div class="broadcast-message">
           <p class="eyebrow" id="side">One board. A whole chat.</p>
           <p class="phase" id="phase">Connecting</p>

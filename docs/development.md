@@ -4,9 +4,9 @@ The local host runs one in-memory game. The operator freely selects legal
 streamer moves; both browser surfaces render host snapshots. Legal-tree
 preparation and candidate search run in workers. OAuth/EventSub has fixture
 checks and host-owned vote collection/timers are implemented. Real broadcaster/
-channel verification, animated per-choice presentation and durable recovery are
-pending. No real secret or configuration file is required for local
-board/candidate work.
+channel verification and durable recovery are pending. Host-owned animated
+previews and final-position miniatures are implemented. No real secret or
+configuration file is required for local board/candidate work.
 
 ## Clean start
 
@@ -25,7 +25,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Until the local-game stack is merged:
-git switch feat/round-voting
+git switch feat/choice-previews
 mise trust
 mise install
 mise exec -- npm ci
@@ -81,8 +81,9 @@ For Twitch setup, follow [the connection guide](twitch-connection.md). A public
 Client ID and explicit broadcaster consent are needed for a real connection;
 fixture tests do not establish that live evidence.
 
-See [voting](voting.md) for duration controls, exact commands, late-event
-admission, empty-poll extension and interruption behavior.
+See [presentation](presentation.md) for preview state isolation and the checked
+1080p/720p layouts. See [voting](voting.md) for duration controls, exact
+commands, late-event admission, empty-poll extension and interruption behavior.
 
 ## Repeatable checks
 

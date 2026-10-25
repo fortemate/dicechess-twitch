@@ -8,8 +8,9 @@ engine-generated complete turns. Built with OpenAI Codex for the
 OAuth/EventSub and host-owned voting are implemented with fixture checks. The
 host freezes up to three complete choices, counts equal votes with changes,
 handles empty polls explicitly and executes the winner once. Actual broadcaster
-consent/channel rehearsal, animated per-choice previews and durable recovery
-remain pending. No submission is implied.
+consent/channel rehearsal and durable recovery remain pending. Engine-approved
+animated previews and final-position miniatures are available. No submission is
+implied.
 
 ## The MVP
 
@@ -35,6 +36,8 @@ pretending an audience decision occurred.
   ownership and engine boundary.
 - [Twitch connection](docs/twitch-connection.md): public-client setup, transport
   lifecycle and remaining live verification.
+- [Presentation](docs/presentation.md): host-owned previews, actual final boards
+  and the read-only broadcast scene.
 - [Voting](docs/voting.md): deadline/late-event policy, equal votes, ties and
   empty-poll recovery.
 - [Game state](docs/game-state.md): implemented controls, transitions and

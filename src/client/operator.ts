@@ -6,7 +6,7 @@ import type {
 import type { OperatorGameState } from '../shared/game.ts';
 import type { TwitchOperatorState } from '../twitch/types.ts';
 import { renderBoard } from './board.ts';
-import { element, subscribe } from './view.ts';
+import { displayBoard, element, subscribe } from './view.ts';
 
 let snapshot: PublicSnapshot | undefined;
 let authority: string | undefined;
@@ -61,12 +61,13 @@ function updateControls() {
     button.hidden = !enabled;
   }
   if (snapshot)
-    renderBoard(element('board'), snapshot.game.dfen, {
+    renderBoard(element('board'), displayBoard(snapshot).dfen, {
       flipped: snapshot.game.streamerColor === 'b',
       click: clickSquare,
       ...(selected ? { selected } : {}),
       actions: controls?.legalActions ?? [],
       disabled: !ready() || snapshot.game.phase !== 'streamer-turn',
+      marks: displayBoard(snapshot).marks,
     });
 }
 

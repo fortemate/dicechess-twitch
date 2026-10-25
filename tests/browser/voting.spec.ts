@@ -29,7 +29,7 @@ test('empty voting stays visible; operator extension accepts equal chat votes an
     initialDfen: fixtures.two.split(' ').slice(0, 6).join(' '),
     roll: () => [1, 1, 1],
     candidates: twoCandidates,
-    previewMs: 50,
+    previewStepMs: 50,
     animationStepMs: 20,
   });
   const host = await startHost({

@@ -8,11 +8,12 @@ Actual broadcaster/channel rehearsal is still required by
 
 ## Opening and controls
 
-Two or three frozen choices enter a pre-vote review hold. The current host hold
-is 4.5 seconds; animated per-choice presentation remains Issue #7. A poll opens
-only when this hold completes and Twitch is healthy. Candidate order, original
-dice and board do not change. Single choices and forced passes use the game's
-explained automatic paths without manufacturing a poll.
+Two or three frozen choices enter
+[host-owned animated preview](presentation.md). Every engine-approved sequence
+is shown and the true starting board restored before polling. A poll opens only
+after preview completes and Twitch is healthy. Candidate order, original dice
+and board do not change. A single choice finishes its preview before explained
+automatic play; a forced pass fabricates no poll.
 
 Default duration is 30 seconds. The operator may set an integer from 5 to 120
 seconds before preview; it cannot be edited during preview, voting or pause. The

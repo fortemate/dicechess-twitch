@@ -3,11 +3,12 @@ import { enumerateTurns } from '../src/engine/search.ts';
 import type { ChatMessage } from '../src/twitch/types.ts';
 import { packet } from './twitch-fixtures.ts';
 
-export async function twoCandidates(
+async function candidates(
   request: CandidateRequest,
+  count: number,
 ): Promise<CandidateResult> {
   const legal = enumerateTurns(request.rolledDfen, 25000);
-  const turns = legal.turns.slice(0, 2);
+  const turns = legal.turns.slice(0, count);
   return {
     request,
     status: 'ready',
@@ -71,3 +72,8 @@ export function voteFrame(message: ChatMessage) {
     },
   );
 }
+
+export const twoCandidates = (request: CandidateRequest) =>
+  candidates(request, 2);
+export const threeCandidates = (request: CandidateRequest) =>
+  candidates(request, 3);

@@ -6,6 +6,7 @@ import type { GameOptions } from './game.ts';
 import { TwitchConnection } from '../twitch/connection.ts';
 import type { SocketFactory } from '../twitch/eventsub.ts';
 import type { ChatMessage } from '../twitch/types.ts';
+import { Preview } from '../presentation/preview.ts';
 import { VotingCoordinator } from '../voting/coordinator.ts';
 import type { VoteDecision } from '../shared/voting.ts';
 
@@ -14,7 +15,7 @@ interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
   twitchFetch?: typeof fetch;
   twitchSocket?: SocketFactory;
   voteDurationMs?: number;
-  previewMs?: number;
+  previewStepMs?: number;
 }
 
 export class Session {
@@ -22,12 +23,13 @@ export class Session {
     sessionId: randomUUID(),
     revision: 0,
     updatedAt: new Date().toISOString(),
-    message: 'Preparing the table',
+    message: 'One board. A whole chat.',
   };
   #onChange: (() => void) | undefined;
   readonly game: Game;
   readonly twitch: TwitchConnection;
   readonly voting: VotingCoordinator;
+  readonly preview: Preview;
   #decisions: VoteDecision[] = [];
   #chatListeners = new Set<(message: ChatMessage) => void>();
   constructor(options: SessionOptions = {}) {
@@ -36,11 +38,12 @@ export class Session {
       twitchFetch,
       twitchSocket,
       voteDurationMs,
-      previewMs,
+      previewStepMs,
       ...gameOptions
     } = options;
     this.game = new Game({
       ...gameOptions,
+      externalPreview: true,
       sessionId: this.#state.sessionId,
       changed: () => this.#changed(),
     });
@@ -56,12 +59,17 @@ export class Session {
         for (const listener of this.#chatListeners) listener(message);
       },
     });
+    this.preview = new Preview({
+      game: this.game,
+      changed: () => this.#changed(),
+      ...(previewStepMs !== undefined ? { stepMs: previewStepMs } : {}),
+    });
     this.voting = new VotingCoordinator({
       game: this.game,
       healthy: () => this.twitch.snapshot().healthy,
       changed: () => this.#changed(),
       ...(voteDurationMs !== undefined ? { durationMs: voteDurationMs } : {}),
-      ...(previewMs !== undefined ? { previewMs } : {}),
+      previewReady: (roundId) => this.preview.ready(roundId),
       decision: (decision) => {
         this.#decisions.push(decision);
         if (this.#decisions.length > 1000) this.#decisions.shift();
@@ -73,12 +81,23 @@ export class Session {
     this.#onChange = listener;
   }
   #changed() {
+    this.preview?.observe();
+    const game = this.game.snapshot();
+    if (
+      game.phase === 'preview' &&
+      game.roundId &&
+      game.choices.length === 1 &&
+      this.preview?.ready(game.roundId)
+    ) {
+      this.game.resolveChoice(game.roundId, game.choices[0]!.option);
+    }
     this.voting?.observe();
     this.#state.revision++;
     this.#state.updatedAt = new Date().toISOString();
     this.#onChange?.();
   }
   dispose() {
+    this.preview.dispose();
     this.voting.dispose();
     this.game.dispose();
     this.twitch.dispose();
@@ -124,6 +143,7 @@ export class Session {
       twitch: this.twitch.snapshot(),
       game: this.game.snapshot(),
       voting: this.voting.snapshot(),
+      preview: this.preview.snapshot(),
     };
   }
 

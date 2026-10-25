@@ -1,5 +1,6 @@
 import type { Color, PublicGame } from './game.ts';
 import type { TwitchPublicState } from '../twitch/types.ts';
+import type { PublicPreview } from './presentation.ts';
 import type { PublicVoting } from './voting.ts';
 
 /** The only state allowed onto the broadcast transport. No configuration or credentials. */
@@ -12,6 +13,7 @@ export interface PublicSnapshot {
   twitch: TwitchPublicState;
   game: PublicGame;
   voting: PublicVoting;
+  preview: PublicPreview;
 }
 
 export interface OperatorBootstrap {
