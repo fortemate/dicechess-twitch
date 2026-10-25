@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: '08:00'
+      timezone: Europe/Riga
+    open-pull-requests-limit: 5
+    assignees: [rabestro]
+    labels: [dependencies, ci-cd]
+    commit-message:
+      prefix: ci
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: '08:00'
+      timezone: Europe/Riga
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    assignees: [rabestro]
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+    groups:
+      development-tools:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Node and npm are pinned together; type majors follow that manual migration.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']

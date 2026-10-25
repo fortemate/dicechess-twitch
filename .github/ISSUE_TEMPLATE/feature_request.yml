@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose a user-visible improvement
+type: Feature
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description:
+        Describe the streamer or viewer need and the current behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description:
+        Describe the user-visible outcome and its fit with the MVP scope.
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description:
+        List testable acceptance criteria and any necessary human rehearsal.
+    validations:
+      required: true

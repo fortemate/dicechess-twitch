@@ -96,6 +96,9 @@ operator game. See [development](docs/development.md) for repeatable checks and
 
 ## Project documents
 
+- [Contributing](CONTRIBUTING.md), [security reporting](SECURITY.md) and
+  [repository checks](docs/repository-checks.md): review policy, dependency
+  updates and owner setup for CodeRabbit/SonarQube Cloud.
 - [MVP specification](docs/mvp.md): accepted scope, voting rules and completion
   criteria.
 - [Architecture](docs/architecture.md): local application, state ownership and

@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability privately
+    url: https://github.com/fortemate/dicechess-twitch/security/advisories/new
+    about: Keep credentials and security reports out of public Issues and PRs.
+  - name: Setup and verification
+    url: https://github.com/fortemate/dicechess-twitch/blob/main/docs/development.md
+    about:
+      Read the supported runtime, local checks and live-verification limits.
