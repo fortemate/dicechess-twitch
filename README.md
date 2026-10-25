@@ -4,10 +4,12 @@ A streamer plays Dice Chess freely; their Twitch chat chooses between three
 engine-generated complete turns. Built with OpenAI Codex for the
 [Codex x TwitchCon Hackathon](https://twitchcon-codex.devpost.com/).
 
-**Status, October 25, 2026:** runnable local application scaffold. An operator
-page and a read-only OBS scene receive one host-owned snapshot. Twitch,
-gameplay, candidate generation and voting are not connected yet; this is not a
-playable demo or a submitted Devpost entry.
+**Status, October 25, 2026:** local streamer play and engine candidate
+preparation are runnable. The operator can roll and freely choose complete legal
+turns on the board; the host prepares up to three frozen chat choices. Forced
+passes and single retained choices run automatically. Multiple choices wait for
+Twitch voting integration. Live Twitch, timed polls, full preview presentation
+and durable recovery are still pending; no submission is implied.
 
 ## The MVP
 
@@ -31,6 +33,10 @@ pretending an audience decision occurred.
   criteria.
 - [Architecture](docs/architecture.md): proposed local application, state
   ownership and engine boundary.
+- [Game state](docs/game-state.md): implemented controls, transitions and
+  limits.
+- [Candidate adapter](docs/candidate-generation.md): evaluation basis,
+  rule-state deduplication and worker bounds.
 - [Delivery plan](docs/delivery-plan.md): dated milestones and the
   implementation issue graph.
 - [Submission checklist](docs/submission.md): judging access, English demo and
@@ -69,7 +75,9 @@ npm run dev
 
 Open [operator](http://127.0.0.1:4310/) and [OBS scene](http://127.0.0.1:4311/).
 Publish a message from the operator page; both pages receive the same committed
-revision. State is in memory and resets on host restart. Keep both ports local.
+revision. Start a game, roll once and select a piece/destination; highlighted
+actions come from the frozen engine tree. State is in memory and resets on host
+restart. Keep both ports local.
 
 `npm run check` runs formatting, strict TypeScript, build and host/engine tests.
 For the real-browser check, run `npx playwright install chromium` and

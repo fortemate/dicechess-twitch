@@ -1,15 +1,17 @@
 # Proposed MVP architecture
 
-Status: local transport scaffold and a standalone candidate adapter implemented October 25, 2026;
-the game, Twitch, voting and persistence sections below remain proposals. The [MVP contract](mvp.md) is accepted.
+Status: local transport, streamer gameplay, candidate preparation and game transition hooks
+implemented October 25, 2026. Twitch, vote collection/timers, pre-vote animation and persistence
+remain follow-up work. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
 
 ## Implemented scaffold
 
 One Node.js process binds two loopback listeners: operator on `127.0.0.1:4310`, read-only OBS on
 `127.0.0.1:4311`. Separate client bundles receive the same initial and updated public snapshot via
-SSE. Snapshot projection includes only session ID, revision, timestamp, setup/paused status,
-on-air message and an explicit not-connected integration marker. No game state is simulated.
+SSE. Snapshot projection includes session ID, revision, timestamp, on-air message, an explicit
+not-connected Twitch marker and a [public game projection](game-state.md). Legal action controls,
+engine scores and operator configuration stay outside that projection.
 
 Only the operator listener exposes bootstrap/command routes. Bootstrap requires a custom request
 header; mutation requires the operator origin, an in-memory capability and the current session
@@ -17,9 +19,9 @@ ID/revision. Host checks reject DNS rebinding; neither listener enables CORS. OB
 assets/routes, and its CSP restricts connections to its own origin. This is a local browser boundary,
 not authentication against other software/users on the machine. Do not expose the listeners publicly.
 
-Commands commit synchronously in the host and broadcast one new revision. Stale/repeated commands
+Accepted commands and asynchronous game transitions advance host revisions. Stale/repeated commands
 return 409. SSE reconnect returns the latest snapshot. A host restart creates a fresh session and
-capability; the operator must reload. Durable recovery and game resolution remain separate work.
+capability; the operator must reload. Durable recovery remains separate work.
 
 ## Local application
 
@@ -32,9 +34,11 @@ The local host owns the board, original dice roll, turn history, candidate set, 
 vote map and resolution. Browser views render snapshots; they do not independently roll dice,
 count down to resolution or apply moves. Restrict mutating controls to the operator session.
 
-The proposed high-level states are streamer turn, chat roll/preparing, preview, voting, resolving,
-chat animation, paused and game over. Every asynchronous result is bound to session ID, position
-version and round ID. Resolution is idempotent.
+Implemented states include streamer roll/preparing/turn, chat roll/preparing, preview, voting,
+resolving, chat animation, paused and game over. Voting/resolution currently have internal service
+hooks tested with explicit fixtures; real vote input and timers are not connected. Multiple chat
+choices stay at preview. Every asynchronous result is scoped to its original job/session/position/
+round; resolution marks the round before animation and rejects repeat callbacks.
 
 ## Engine boundary
 

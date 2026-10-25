@@ -1,10 +1,10 @@
 # Local development
 
-The scaffold runs one in-memory session in a local Node.js host. Two browser
-pages render its snapshots. A standalone public-engine candidate adapter runs in
-a worker; it is not wired into a game yet. Twitch/OAuth, gameplay, voting and
-durable recovery are not implemented. No real secret or configuration file is
-required.
+The local host runs one in-memory game. The operator freely selects legal
+streamer moves; both browser surfaces render host snapshots. Legal-tree
+preparation and candidate search run in workers. Real Twitch/OAuth, vote
+collection/timers, complete pre-vote presentation and durable recovery are
+pending. No real secret or configuration file is required for local play.
 
 ## Clean start
 
@@ -22,8 +22,8 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 ```sh
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# Until the candidate adapter stack is merged:
-git switch feat/full-turn-candidates
+# Until the local-game stack is merged:
+git switch feat/authoritative-game
 mise trust
 mise install
 mise exec -- npm ci
@@ -53,14 +53,21 @@ npm start
 1. Open operator `http://127.0.0.1:4310/` and OBS `http://127.0.0.1:4311/` in
    separate browser tabs.
 2. Both show “Live from local host”, the same session ID and revision 0.
-3. Set the on-air message to “The chat takes a seat”, choose “Paused” and
-   publish. Both pages must show that message, “Paused” and revision 1. The
-   command response and SSE events come from the host.
+3. Set the on-air message to “The chat takes a seat” and publish. Both pages
+   must show that message and revision 1. Commands and SSE events come from the
+   host.
 4. Reload OBS. It must still show revision 1, with no form, button or operator
    note.
-5. Stop the host. Both pages must show disconnection; operator controls become
+5. Choose the streamer's side and start a game. Roll once, select a piece and
+   highlighted destination, and finish all required legal actions. Promotion
+   offers every legal piece; castling uses the king's destination. The host
+   automatically handles rolls with no playable move.
+6. Chat rolls once and the worker prepares choices. A single retained choice is
+   explained and auto-played; multiple choices stay at preview while Twitch
+   voting is pending. Pause/resume preserves the board, roll and choices.
+7. Stop the host. Both pages must show disconnection; operator controls become
    disabled.
-6. Restart the host and reload the operator. Both pages show a new session and
+8. Restart the host and reload the operator. Both pages show a new session and
    revision 0.
 
 In OBS use a Browser Source URL of `http://127.0.0.1:4311/` at 1920 × 1080.
@@ -81,23 +88,28 @@ git diff --check
 
 `npm test` builds assets and runs Node tests: public engine import/legal-turn
 tree, candidate legality/identity/quality/deadlines and worker responsiveness,
-shared host/SSE state including reconnect, OBS route isolation, operator
-origin/capability/host guards, stale/repeated commands, input bounds, and
-public-data projection. `npm run check` combines formatting, strict TypeScript
-and those build/tests. Prettier preserves the inherited planning documents and
-canonical shared blocks through explicit exclusions in `.prettierignore`.
+game transitions/once-only dice and resolution, shared host/SSE state including
+reconnect, OBS route isolation, operator origin/capability/host guards,
+stale/repeated commands, input bounds, and public-data projection.
+`npm run check` combines formatting, strict TypeScript and those build/tests.
+Prettier preserves the inherited planning documents and canonical shared blocks
+through explicit exclusions in `.prettierignore`.
 
-The [candidate adapter](candidate-generation.md) is a standalone host module.
-Run `npm run --silent bench:candidates` to repeat the recorded synthetic
-opening/tactical/high-branching measurements. It is not yet connected to the
-operator page or a game session.
+The [candidate adapter](candidate-generation.md) is a reusable host module. Run
+`npm run --silent bench:candidates` to repeat the recorded synthetic
+opening/tactical/high-branching measurements. The local game calls it for chat
+turns.
 
-Playwright launches the built host and Chromium. Two checks cover operator
+Playwright launches the built host and Chromium. Checks cover operator
 publication, the OBS revision, read-only DOM, cross-origin isolation, reload
 behavior, the 1920 × 1080 viewport and a real SSE disconnect/reconnect without a
-revision change. They save local screenshots to `test-results/` (gitignored).
-Both default ports must be free. CI runs the same checks on Ubuntu with the
-pinned runtime and installs Chromium's Linux dependencies.
+revision change. Game checks click a complete turn through the board, prepare
+real-engine chat choices, and verify promotion/castling UI, pause/resume,
+uniform square geometry and hidden unavailable controls. Their dice and special
+starting positions are explicit test fixtures, not live Twitch evidence. They
+save local screenshots to `test-results/` (gitignored). Both default ports must
+be free. CI runs the same checks on Ubuntu with the pinned runtime and installs
+Chromium's Linux dependencies.
 
 ## Verified scaffold run
 

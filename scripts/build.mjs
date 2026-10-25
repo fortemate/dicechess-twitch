@@ -17,6 +17,7 @@ await Promise.all([
     entryPoints: {
       main: 'src/host/main.ts',
       'candidate-worker': 'src/host/candidate-worker.ts',
+      'rules-worker': 'src/host/rules-worker.ts',
       'candidate-generator': 'src/engine/generator.ts',
     },
     outdir: 'dist/host',
