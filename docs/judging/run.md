@@ -4,8 +4,11 @@ Repository:
 [fortemate/dicechess-twitch](https://github.com/fortemate/dicechess-twitch). It
 was verified private on October 25, 2026; judge access and a final judged commit
 are not yet confirmed. The owner must choose/review that revision and provide
-access before treating this as a ready package. `main` currently holds planning;
-until merge, the prepared review branch is `docs/judging-package`.
+access before treating this as a ready package. `main` currently contains only
+the initial README. The verified review baseline is
+[`e3515e7`](https://github.com/fortemate/dicechess-twitch/pull/31), including
+the operator and multiple-en-passant checkpoint fixes; it is not a final judged
+revision. See [development](../development.md) for verification evidence.
 
 ## Local install and checks
 
@@ -18,8 +21,8 @@ platform/check evidence.
 ```sh
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# Review branch until the owner merges/selects the judged revision:
-git switch docs/judging-package
+# Verified review baseline until the owner selects the judged revision:
+git switch --detach e3515e7fdbc8ab1ab3cab525881ca4cf719a463c
 mise trust
 mise install
 mise exec -- npm ci
