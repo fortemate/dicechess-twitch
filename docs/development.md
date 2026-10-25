@@ -23,10 +23,9 @@ checks its actual runtime and fails on a version mismatch. Check child-process
 resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 
 ```sh
-git clone git@github.com:fortemate/dicechess-twitch.git
+git clone https://github.com/fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# Verified review baseline until the application stack is merged:
-git switch --detach 42077d86d82e96227fd0d20a8b1886157be4ed35
+# For an unmerged PR, check out its head branch before installing.
 mise trust
 mise install
 mise exec -- npm ci
@@ -34,21 +33,23 @@ mise exec -- npm run check
 mise exec -- npm run dev
 ```
 
-The private repository requires GitHub access. Installation downloads public npm
-packages; no private registry or token is required. If managing Node manually,
-install the exact versions above and omit `mise exec --`.
+Repository access is required while visibility remains private. Installation
+downloads public npm packages; no private registry or token is required. If
+managing Node manually, install the exact versions above and omit
+`mise exec --`.
 
-The October 25 review baseline above is
+The recorded October 25 application baseline `42077d8` is
 [PR #38](https://github.com/fortemate/dicechess-twitch/pull/38), including the
 operator input, multiple-en-passant checkpoint and failed-worker fixes plus the
 complete-game fixture runner. Its CI passed 67 Node and 13 Chromium checks. A
 [fresh-checkout fixture report](measurements/integration-local.json) records two
 complete games at this exact revision with real engine workers and fake Twitch.
-It is separate from real broadcaster/human-game verification. The earlier
-`docs/judging-package` branch predates those fixes. `main` currently contains
-only the initial README; the owner must review/merge the stack and choose the
-final judged revision. This pinned checkout is for verification; create a
-feature branch before editing it.
+It is separate from real broadcaster/human-game verification. That commit is a
+historical verification point, not the final judged revision. For current PR
+review, use the integration PR's head; after it is merged, use `main`. The owner
+chooses the final judged revision. To reproduce only the recorded baseline,
+check out `42077d86d82e96227fd0d20a8b1886157be4ed35` detached before installing;
+create a feature branch before editing it.
 
 Development rebuilds `src/` changes and restarts the host. Restart creates a new
 process session/authority and restores the committed game paused from

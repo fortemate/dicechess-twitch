@@ -1,17 +1,46 @@
 # Twitch Plays Dice Chess
 
-A streamer plays Dice Chess freely; their Twitch chat chooses between three
-engine-generated complete turns. Built with OpenAI Codex for the
+A streamer plays Dice Chess freely; their Twitch chat chooses between up to
+three engine-generated complete turns. Built with OpenAI Codex for the
 [Codex x TwitchCon Hackathon](https://twitchcon-codex.devpost.com/).
 
-**Status, October 25, 2026:** local streamer play, engine candidate preparation,
-OAuth/EventSub and host-owned voting are implemented with fixture checks. The
-host freezes up to three complete choices, counts equal votes with changes,
-handles empty polls explicitly and executes the winner once. Actual broadcaster
-consent/channel rehearsal remains pending. Durable local recovery restores
-active play paused with its committed board, roll, choices and history.
-Engine-approved animated previews and final-position miniatures are available.
-No submission is implied.
+**Status: local MVP, live Twitch verification pending.** Streamer play,
+candidate generation, OAuth/EventSub, voting, animated previews and durable
+recovery are implemented. Automated checks use the public engine and explicit
+Twitch fixtures. Real broadcaster consent, a human-viewer Twitch/OBS game and
+demo footage have not been verified. This repository is not a submitted entry.
+
+## Run locally
+
+Requires Git, Node.js **24.22.1** and npm **11.19.1**. With
+[mise](https://mise.jdx.dev/):
+
+```sh
+git clone https://github.com/fortemate/dicechess-twitch.git
+cd dicechess-twitch
+mise trust
+mise install
+mise exec -- npm ci
+mise exec -- npm run dev
+```
+
+For an unmerged PR, check out its head branch before installing. Repository
+access is required while it remains private. With the exact Node/npm versions
+already active, omit the mise commands and wrapper.
+
+Open the [operator](http://127.0.0.1:4310/) to start a game and play legal
+streamer turns. Add the read-only [game scene](http://127.0.0.1:4311/) to OBS as
+a 1920 × 1080 Browser Source. Both listeners bind to the local machine.
+
+Local play and candidate previews need no Twitch credentials. Multi-choice
+voting waits for a healthy Twitch connection. To connect a real channel, follow
+the [broadcaster setup](docs/twitch-connection.md): register a public Twitch
+application, launch with its public Client ID and personally approve access from
+the operator page. This application requests chat-read access only.
+
+The host saves to `.local/session.json`. After restart, reload the operator and
+explicitly resume the restored game. Twitch authorization stays in memory and
+must be renewed after restart. Keep the operator page off the stream.
 
 ## The MVP
 
@@ -25,16 +54,52 @@ No submission is implied.
 5. The winning sequence plays automatically and control returns to the streamer.
 
 Three is the maximum number of meaningful choices, not a requirement to
-fabricate alternatives. No legal turn forces a pass; one meaningful choice is
-visibly auto-played. A poll with no votes waits for the operator rather than
-pretending an audience decision occurred.
+fabricate alternatives. With no legal turn, the side passes; one meaningful
+choice is visibly auto-played. A poll with no votes waits for the operator
+rather than pretending an audience decision occurred.
+
+## Checks and evidence
+
+```sh
+mise exec -- npm run check
+mise exec -- npx playwright install chromium
+mise exec -- npm run test:browser
+```
+
+`check` runs formatting, strict TypeScript, build and Node tests. The recorded
+[application baseline](docs/measurements/integration-local.json) passed **67
+Node tests and 13 Chromium scenarios**. A fresh checkout completed two games
+with real engine workers, fake Twitch and accelerated timers; these are local
+integration checks, not live audience or stream-latency evidence.
+
+Optional fixture checks:
+
+```sh
+mise exec -- npm run rehearse:full-game
+mise exec -- npm run rehearse:fixtures -- promotion
+```
+
+The full-game runner writes reports under `.local/rehearsals/`. The separate
+rare-case host uses ports 4410/4411, fixed positions/dice and no Twitch or saved
+operator game. See [development](docs/development.md) for repeatable checks and
+[broadcast rehearsal](docs/broadcast-rehearsal.md) for the unfinished live plan.
+
+## Limits
+
+- One local game and one installed broadcaster channel; no hosted service.
+- At most three meaningful choices. The engine adapter performs bounded sampling
+  and evaluation; it does not promise a globally optimal top three.
+- Stream delay has not been measured. Vote admission has zero delivery grace; a
+  delayed viewer's intended round cannot be inferred from plain `!vote N`.
+- Real OAuth/chat, human-viewer play, OBS capture and account/network recovery
+  still need a broadcaster-run rehearsal. Local fixtures do not establish them.
 
 ## Project documents
 
 - [MVP specification](docs/mvp.md): accepted scope, voting rules and completion
   criteria.
-- [Architecture](docs/architecture.md): proposed local application, state
-  ownership and engine boundary.
+- [Architecture](docs/architecture.md): local application, state ownership and
+  engine boundary.
 - [Twitch connection](docs/twitch-connection.md): public-client setup, transport
   lifecycle and remaining live verification.
 - [Recovery](docs/recovery.md): durable checkpoints, explicit resume and saving
@@ -56,9 +121,8 @@ pretending an audience decision occurred.
   checklist.
 - [Submission checklist](docs/submission.md): judging access, English demo and
   the actual Codex session.
-- [Issues](https://github.com/fortemate/dicechess-twitch/issues) and
-  [Fortemate Engineering](https://github.com/orgs/fortemate/projects/1): current
-  execution state.
+- [Issues](https://github.com/fortemate/dicechess-twitch/issues): unfinished
+  work and current implementation status.
 
 ## Dates and existing foundation
 
@@ -73,37 +137,9 @@ project owns the Twitch connection, three-choice audience experience, voting,
 presentation and session orchestration developed during the hackathon window.
 Reused work will be identified explicitly in the submission.
 
-The repository is currently private. Reviewer access and any change in
-visibility are recorded separately in the submission task. Do not copy private
-evaluators, weights, books, production search profiles or restricted
-voice/music/portrait assets into this application.
-
-## Development
-
-Use Node.js **24.22.1** and npm **11.19.1** (or `mise trust && mise install`).
-From this repository:
-
-```sh
-npm ci
-npm run dev
-```
-
-Open [operator](http://127.0.0.1:4310/) and [OBS scene](http://127.0.0.1:4311/).
-Publish a message from the operator page; both pages receive the same committed
-revision. Start a game, roll once and select a piece/destination; highlighted
-actions come from the frozen engine tree. The CLI saves to `.local/session.json`
-and restores active games paused after restart; reload the operator and resume
-explicitly. Keep both ports local.
-
-`npm run check` runs formatting, strict TypeScript, build and host/engine tests.
-For the real-browser check, run `npx playwright install chromium` and
-`npm run test:browser`. `npm run rehearse:full-game` runs two isolated headless
-games with real engine workers, fake Twitch and accelerated timers; reports stay
-in `.local/rehearsals/`.
-
-See [development and verification](docs/development.md) for clean-start, build
-and two-page checks, and [third-party provenance](docs/provenance.md) for the
-pinned public engine and tools.
+See [third-party provenance](docs/provenance.md) for the pinned public engine,
+tools and asset sources. No private models, books, production search profiles or
+restricted media assets are bundled.
 
 ## License
 

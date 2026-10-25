@@ -10,11 +10,11 @@ process restart report are separate evidence.
 
 Record the exact commit, date/time/timezone, machine/OS and Node/npm versions in
 [the report template](rehearsal-report-template.md). Review the open PR stack
-before choosing a tested revision; `main` does not yet contain the application.
-Use the exact review baseline in [development](development.md#clean-start),
-which includes the operator and multiple-en-passant checkpoint fixes and the
-complete-game fixture runner. The owner chooses the final rehearsal revision
-after reviewing the stack.
+before choosing a tested revision. Until the integration PR is merged, use its
+head branch; afterwards use `main`. The integrated application includes the
+operator and multiple-en-passant checkpoint fixes and the complete-game fixture
+runner. The owner chooses the final rehearsal revision after reviewing the
+stack.
 
 Follow [development](development.md): pinned runtime, `npm ci`, `npm run check`,
 Chromium installation and `npm run test:browser`. A clean checkout needs the

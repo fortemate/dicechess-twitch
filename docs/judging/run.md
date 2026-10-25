@@ -4,8 +4,8 @@ Repository:
 [fortemate/dicechess-twitch](https://github.com/fortemate/dicechess-twitch). It
 was verified private on October 25, 2026; judge access and a final judged commit
 are not yet confirmed. The owner must choose/review that revision and provide
-access before treating this as a ready package. `main` currently contains only
-the initial README. The verified review baseline is
+access before treating this as a ready package. Review the integration PR's head
+until it is merged, then use `main`. The recorded application baseline is
 [`42077d8`](https://github.com/fortemate/dicechess-twitch/pull/38), including
 the operator input, multiple-en-passant checkpoint and failed-worker fixes; it
 is not a final judged revision. See [development](../development.md) for
@@ -20,10 +20,10 @@ OpenAI API key. See [development](../development.md) for mise setup and actual
 platform/check evidence.
 
 ```sh
-git clone git@github.com:fortemate/dicechess-twitch.git
+git clone https://github.com/fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# Verified review baseline until the owner selects the judged revision:
-git switch --detach 42077d86d82e96227fd0d20a8b1886157be4ed35
+# For an unmerged PR, check out its head branch before installing.
+# For judging, check out the exact revision selected by the owner.
 mise trust
 mise install
 mise exec -- npm ci
