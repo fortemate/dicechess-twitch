@@ -14,11 +14,12 @@ import {
   welcome,
 } from '../twitch-fixtures.ts';
 
-test('Pause and Resume remain usable when chat arrives after the browser sends a command', async ({
+test('operator buttons and board gestures survive chat-only updates', async ({
   page,
 }) => {
   const sockets: FakeSocket[] = [];
   const session = new Session({
+    roll: () => [1, 2, 5],
     twitchClientId: clientId,
     twitchFetch: authFixture().fetcher,
     twitchSocket: () => {
@@ -70,6 +71,36 @@ test('Pause and Resume remain usable when chat arrives after the browser sends a
     expect(session.snapshot().twitch.receivedMessages).toBe(
       delivered + background,
     );
+    clearInterval(traffic);
+    traffic = undefined;
+    await page
+      .getByRole('button', { name: 'Resume game', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Roll dice', exact: true }).click();
+    await expect(page.locator('#phase')).toHaveText('streamer turn');
+    await expect(page.locator('#board [data-square="b1"]')).toBeEnabled();
+    async function gesture(square: string) {
+      const box = await page
+        .locator(`#board [data-square="${square}"]`)
+        .boundingBox();
+      if (!box) throw new Error('Expected a visible board square');
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      const revision = session.snapshot().controlRevision;
+      sockets[0]!.receive(chat(`gesture-${square}`));
+      expect(session.snapshot().controlRevision).toBe(revision);
+      await expect(page.locator('#revision')).toHaveText(
+        String(session.snapshot().revision),
+      );
+      await page.mouse.up();
+    }
+    await gesture('b1');
+    await expect(page.locator('#board [data-square="b1"]')).toHaveClass(
+      /selected/,
+    );
+    await gesture('c3');
+    await expect.poll(() => session.checkpoint().game.moves).toEqual(['b1c3']);
+    await expect(page.locator('#board [data-square="c3"]')).toHaveText('♘');
   } finally {
     clearInterval(traffic);
     await host.close();

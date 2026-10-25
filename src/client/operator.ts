@@ -15,6 +15,7 @@ let connected = false;
 let pending = false;
 let selected: string | undefined;
 let lastPositionVersion = -1;
+let renderedBoardKey: string | undefined;
 let twitch:
   (TwitchOperatorState & { sessionId: string; revision: number }) | undefined;
 
@@ -61,15 +62,26 @@ function updateControls() {
     button.disabled = !enabled || !ready();
     button.hidden = !enabled;
   }
-  if (snapshot)
-    renderBoard(element('board'), displayBoard(snapshot).dfen, {
+  if (snapshot) {
+    const display = displayBoard(snapshot);
+    const options = {
       flipped: snapshot.game.streamerColor === 'b',
-      click: clickSquare,
       ...(selected ? { selected } : {}),
       actions: controls?.legalActions ?? [],
       disabled: !ready() || snapshot.game.phase !== 'streamer-turn',
-      marks: displayBoard(snapshot).marks,
-    });
+      marks: display.marks,
+    };
+    // Replacing unchanged square buttons between pointer-down and pointer-up
+    // cancels a valid gesture when unrelated chat/countdown snapshots arrive.
+    const key = JSON.stringify([display.dfen, options]);
+    if (key !== renderedBoardKey) {
+      renderBoard(element('board'), display.dfen, {
+        ...options,
+        click: clickSquare,
+      });
+      renderedBoardKey = key;
+    }
+  }
 }
 
 async function loadControls() {
