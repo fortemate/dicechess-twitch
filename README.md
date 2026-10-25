@@ -8,8 +8,9 @@ engine-generated complete turns. Built with OpenAI Codex for the
 preparation are runnable. The operator can roll and freely choose complete legal
 turns on the board; the host prepares up to three frozen chat choices. Forced
 passes and single retained choices run automatically. Multiple choices wait for
-Twitch voting integration. Live Twitch, timed polls, full preview presentation
-and durable recovery are still pending; no submission is implied.
+Twitch voting integration. OAuth/EventSub has fixture-tested code; real-channel
+verification, timed polls, full preview presentation and durable recovery are
+still pending. No submission is implied.
 
 ## The MVP
 
@@ -33,6 +34,8 @@ pretending an audience decision occurred.
   criteria.
 - [Architecture](docs/architecture.md): proposed local application, state
   ownership and engine boundary.
+- [Twitch connection](docs/twitch-connection.md): public-client setup, transport
+  lifecycle and remaining live verification.
 - [Game state](docs/game-state.md): implemented controls, transitions and
   limits.
 - [Candidate adapter](docs/candidate-generation.md): evaluation basis,

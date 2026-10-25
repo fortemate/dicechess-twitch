@@ -1,4 +1,5 @@
 import type { Color, PublicGame } from './game.ts';
+import type { TwitchPublicState } from '../twitch/types.ts';
 
 /** The only state allowed onto the broadcast transport. No configuration or credentials. */
 export interface PublicSnapshot {
@@ -6,7 +7,8 @@ export interface PublicSnapshot {
   revision: number;
   updatedAt: string;
   message: string;
-  integration: 'not-connected';
+  integration: 'not-connected' | 'connected';
+  twitch: TwitchPublicState;
   game: PublicGame;
 }
 
@@ -25,7 +27,15 @@ export type OperatorCommand = CommandIdentity &
     | { action: 'set-message'; message: string }
     | { action: 'start'; streamerColor: Color }
     | { action: 'move'; uci: string }
-    | { action: 'roll' | 'pause' | 'resume' | 'rematch' }
+    | {
+        action:
+          | 'roll'
+          | 'pause'
+          | 'resume'
+          | 'rematch'
+          | 'twitch-connect'
+          | 'twitch-disconnect';
+      }
   );
 
 export function isOperatorCommand(value: unknown): value is OperatorCommand {
@@ -60,6 +70,8 @@ export function isOperatorCommand(value: unknown): value is OperatorCommand {
     case 'pause':
     case 'resume':
     case 'rematch':
+    case 'twitch-connect':
+    case 'twitch-disconnect':
       return keys === 'action,expectedRevision,sessionId';
     default:
       return false;

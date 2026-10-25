@@ -1,8 +1,8 @@
 # Proposed MVP architecture
 
 Status: local transport, streamer gameplay, candidate preparation and game transition hooks
-implemented October 25, 2026. Twitch, vote collection/timers, pre-vote animation and persistence
-remain follow-up work. The [MVP contract](mvp.md) is accepted.
+implemented October 25, 2026. OAuth/EventSub code is locally fixture-tested; real Twitch
+verification, vote collection/timers, pre-vote animation and persistence remain follow-up work. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
 
 ## Implemented scaffold
@@ -60,6 +60,11 @@ position. Repeated isolated `getLegalUciMoves` calls can admit sequences that vi
 maximum-dice rules. Preview snapshots must not mutate the authoritative game.
 
 ## Twitch boundary
+
+The [installed connection](twitch-connection.md) now implements a public-client device grant,
+startup/hourly validation, refresh and EventSub lifecycle with host-only authorization material.
+Operator activation details are separate from the public connection-health projection. Local
+fixtures cover these paths; actual broadcaster consent and real-channel evidence are still pending.
 
 Use the installed-chatbot flow with broadcaster authorization and EventSub WebSocket reception for
 `channel.chat.message`. Twitch recommends WebSocket transport for locally installed applications;

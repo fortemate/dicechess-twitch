@@ -2,9 +2,10 @@
 
 The local host runs one in-memory game. The operator freely selects legal
 streamer moves; both browser surfaces render host snapshots. Legal-tree
-preparation and candidate search run in workers. Real Twitch/OAuth, vote
-collection/timers, complete pre-vote presentation and durable recovery are
-pending. No real secret or configuration file is required for local play.
+preparation and candidate search run in workers. OAuth/EventSub has fixture
+checks; real broadcaster/channel verification, vote collection/timers, complete
+pre-vote presentation and durable recovery are pending. No real secret or
+configuration file is required for local board/candidate work.
 
 ## Clean start
 
@@ -23,7 +24,7 @@ resolution with `mise exec -- npm exec -c 'node --version'` if troubleshooting.
 git clone git@github.com:fortemate/dicechess-twitch.git
 cd dicechess-twitch
 # Until the local-game stack is merged:
-git switch feat/authoritative-game
+git switch feat/twitch-eventsub
 mise trust
 mise install
 mise exec -- npm ci
@@ -73,6 +74,10 @@ npm start
 In OBS use a Browser Source URL of `http://127.0.0.1:4311/` at 1920 × 1080.
 Chromium verification does not establish real OBS capture or Twitch evidence;
 those belong to later rehearsal issues.
+
+For Twitch setup, follow [the connection guide](twitch-connection.md). A public
+Client ID and explicit broadcaster consent are needed for a real connection;
+fixture tests do not establish that live evidence.
 
 ## Repeatable checks
 
@@ -137,7 +142,7 @@ not other processes on the machine.
 
 The public snapshot is an explicit allowlist and never serializes private
 configuration. `.env`, `.env.*`, `mise.local.toml` and `.local/` are gitignored.
-The scaffold does **not** load these files; OAuth/configuration handling will be
-implemented with Twitch integration. Future adapters must retain this separation
-and must not put tokens or raw chat/configuration into broadcast events or
-errors.
+The application does **not** load these files. Twitch uses only the public
+`TWITCH_CLIENT_ID` launch variable; OAuth tokens remain in host memory. Future
+adapters must retain this separation and must not put tokens or raw
+chat/configuration into broadcast events or errors.

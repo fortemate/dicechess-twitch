@@ -7,6 +7,9 @@ streamer turn through the board, pause/resume and rematch after game over. The
 host rolls for chat and prepares frozen engine choices. Real Twitch vote
 collection/timers and pre-vote animated previews remain later issues.
 
+The [OAuth/EventSub connection](twitch-connection.md) supplies host-only events
+and sanitized health, with real-channel verification still pending.
+
 ## State and ownership
 
 `Game` owns the DFEN, original rolled DFEN, current legal-tree node/prefix,

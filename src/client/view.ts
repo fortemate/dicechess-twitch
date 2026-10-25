@@ -26,6 +26,8 @@ export function subscribe(
       return;
     latest = snapshot;
     element('message').textContent = snapshot.message;
+    element('twitch-status').textContent =
+      `Twitch: ${snapshot.twitch.phase.replaceAll('-', ' ')}`;
     element('phase').textContent = snapshot.game.phase.replaceAll('-', ' ');
     element('announcement').textContent = snapshot.game.announcement;
     const last = snapshot.game.lastTurn;

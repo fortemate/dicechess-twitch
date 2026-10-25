@@ -349,3 +349,72 @@ test('disposed sessions ignore late asynchronous results', async () => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.deepEqual(game.snapshot(), stopped);
 });
+
+test('chat loss invalidates the old poll, retains exact choices and requires healthy explicit resume', async () => {
+  let calls = 0;
+  const game = make({
+    initialDfen: unrolled(fixtures.two),
+    roll: () => [1, 1, 1],
+    candidates: async (request) => {
+      calls++;
+      return set(request, 2);
+    },
+  });
+  try {
+    game.start('b');
+    await until(() => game.snapshot().phase === 'preview');
+    const original = game.snapshot();
+    game.openVoting(original.roundId!);
+    game.chatInterrupted();
+    const interrupted = game.snapshot();
+    assert.equal(interrupted.phase, 'paused');
+    assert.notEqual(interrupted.roundId, original.roundId);
+    assert.equal(interrupted.dfen, original.dfen);
+    assert.equal(interrupted.dice, original.dice);
+    assert.deepEqual(interrupted.choices, original.choices);
+    assert.equal(calls, 1);
+    assert.equal(game.resume(), false);
+    assert.equal(game.controls().canResume, false);
+    assert.equal(game.resolveChoice(original.roundId!, 1), false);
+    game.chatRestored();
+    assert.equal(game.resume(), true);
+    assert.equal(game.snapshot().phase, 'preview');
+    assert.equal(calls, 1);
+    assert.equal(game.openVoting(original.roundId!), false);
+    assert.equal(game.openVoting(interrupted.roundId!), true);
+    assert.equal(game.resolveChoice(original.roundId!, 1), false);
+  } finally {
+    game.dispose();
+  }
+});
+
+test('choices completed during a connection loss remain paused under a fresh round identity', async () => {
+  const ready = deferred<CandidateResult>();
+  let request: CandidateRequest | undefined;
+  const game = make({
+    initialDfen: unrolled(fixtures.two),
+    roll: () => [1, 1, 1],
+    candidates: (input) => {
+      request = input;
+      return ready.promise;
+    },
+  });
+  try {
+    game.start('b');
+    const original = game.snapshot();
+    game.chatInterrupted();
+    ready.resolve(set(request!, 2));
+    await until(() => game.snapshot().choices.length === 2);
+    assert.equal(game.snapshot().phase, 'paused');
+    assert.notEqual(game.snapshot().roundId, original.roundId);
+    assert.equal(game.snapshot().dfen, original.dfen);
+    assert.equal(game.resume(), false);
+    game.chatRestored();
+    assert.equal(game.resume(), true);
+    assert.equal(game.snapshot().phase, 'preview');
+    assert.equal(game.openVoting(original.roundId!), false);
+    assert.equal(game.openVoting(game.snapshot().roundId!), true);
+  } finally {
+    game.dispose();
+  }
+});

@@ -59,6 +59,7 @@ export class Game {
   #pendingPass = false;
   #failed: 'tree' | 'candidates' | undefined;
   #disposed = false;
+  #chatUnavailable = false;
 
   constructor(options: GameOptions) {
     this.#options = options;
@@ -96,7 +97,7 @@ export class Game {
       canStart: this.#phase === 'idle',
       canRoll: this.#phase === 'streamer-roll',
       canPause: !['idle', 'paused', 'game-over'].includes(this.#phase),
-      canResume: this.#phase === 'paused',
+      canResume: this.#phase === 'paused' && !this.#chatUnavailable,
       canRematch: this.#phase === 'game-over',
     };
   }
@@ -113,6 +114,7 @@ export class Game {
     this.#resolvedRounds.clear();
     this.#resumePhase = null;
     this.#phase = 'idle';
+    this.#chatUnavailable = false;
     this.#failed = undefined;
     this.#pendingPass = false;
     this.#animation = undefined;
@@ -161,7 +163,7 @@ export class Game {
   }
 
   resume(): boolean {
-    if (this.#phase !== 'paused' || !this.#resumePhase) return false;
+    if (!this.controls().canResume || !this.#resumePhase) return false;
     this.#phase = this.#resumePhase;
     this.#resumePhase = null;
     if (this.#pendingPass) {
@@ -242,6 +244,44 @@ export class Game {
   dispose() {
     this.#disposed = true;
     this.#cancelWork();
+  }
+
+  chatInterrupted() {
+    if (this.#disposed || ['idle', 'game-over'].includes(this.#phase)) return;
+    this.pause();
+    this.#chatUnavailable = true;
+    if (this.#resumePhase === 'preview' || this.#resumePhase === 'voting') {
+      this.#renewRound();
+      this.#resumePhase = 'preview';
+    }
+    this.#announcement =
+      'Twitch connection interrupted. The saved roll and choices are paused.';
+    this.#changed();
+  }
+
+  chatRestored() {
+    if (!this.#chatUnavailable || this.#disposed) return;
+    this.#chatUnavailable = false;
+    this.#announcement =
+      'Chat is connected again. Resume the saved game explicitly.';
+    this.#changed();
+  }
+
+  #renewRound() {
+    if (
+      !this.#roundId ||
+      !this.#candidates ||
+      this.#resolvedRounds.has(this.#roundId)
+    )
+      return;
+    this.#roundId = randomUUID();
+    this.#candidates = Object.freeze({
+      ...this.#candidates,
+      request: Object.freeze({
+        ...this.#candidates.request,
+        roundId: this.#roundId,
+      }),
+    });
   }
 
   #changed() {
@@ -384,6 +424,7 @@ export class Game {
           return;
         }
         this.#candidates = result;
+        if (this.#chatUnavailable) this.#renewRound();
         if (result.status === 'forced-pass') {
           this.#pass();
           return;

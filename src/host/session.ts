@@ -3,6 +3,15 @@ import type { OperatorCommand, PublicSnapshot } from '../shared/protocol.ts';
 import type { OperatorGameState } from '../shared/game.ts';
 import { Game } from './game.ts';
 import type { GameOptions } from './game.ts';
+import { TwitchConnection } from '../twitch/connection.ts';
+import type { SocketFactory } from '../twitch/eventsub.ts';
+import type { ChatMessage } from '../twitch/types.ts';
+
+interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
+  twitchClientId?: string;
+  twitchFetch?: typeof fetch;
+  twitchSocket?: SocketFactory;
+}
 
 export class Session {
   #state = {
@@ -13,11 +22,26 @@ export class Session {
   };
   #onChange: (() => void) | undefined;
   readonly game: Game;
-  constructor(options: Omit<GameOptions, 'changed' | 'sessionId'> = {}) {
+  readonly twitch: TwitchConnection;
+  #chatListeners = new Set<(message: ChatMessage) => void>();
+  constructor(options: SessionOptions = {}) {
+    const { twitchClientId, twitchFetch, twitchSocket, ...gameOptions } =
+      options;
     this.game = new Game({
-      ...options,
+      ...gameOptions,
       sessionId: this.#state.sessionId,
       changed: () => this.#changed(),
+    });
+    this.twitch = new TwitchConnection({
+      ...(twitchClientId ? { clientId: twitchClientId } : {}),
+      ...(twitchFetch ? { fetcher: twitchFetch } : {}),
+      ...(twitchSocket ? { socket: twitchSocket } : {}),
+      changed: () => this.#changed(),
+      interrupted: () => this.game.chatInterrupted(),
+      restored: () => this.game.chatRestored(),
+      onChat: (message) => {
+        for (const listener of this.#chatListeners) listener(message);
+      },
     });
   }
 
@@ -31,6 +55,19 @@ export class Session {
   }
   dispose() {
     this.game.dispose();
+    this.twitch.dispose();
+    this.#chatListeners.clear();
+  }
+  onChat(listener: (message: ChatMessage) => void) {
+    this.#chatListeners.add(listener);
+    return () => this.#chatListeners.delete(listener);
+  }
+  operatorTwitchState() {
+    return {
+      sessionId: this.#state.sessionId,
+      revision: this.#state.revision,
+      ...this.twitch.operatorState(),
+    };
   }
 
   operatorState(): OperatorGameState {
@@ -49,7 +86,10 @@ export class Session {
       revision: state.revision,
       updatedAt: state.updatedAt,
       message: state.message,
-      integration: 'not-connected',
+      integration: this.twitch.snapshot().healthy
+        ? 'connected'
+        : 'not-connected',
+      twitch: this.twitch.snapshot(),
       game: this.game.snapshot(),
     };
   }
@@ -86,6 +126,12 @@ export class Session {
         accepted =
           this.game.controls().canRematch &&
           this.game.start(this.game.snapshot().streamerColor);
+        break;
+      case 'twitch-connect':
+        accepted = this.twitch.connect();
+        break;
+      case 'twitch-disconnect':
+        accepted = this.twitch.disconnect();
         break;
     }
     if (!accepted) return undefined;

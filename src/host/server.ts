@@ -108,6 +108,15 @@ export async function startHost(options: HostOptions) {
       }
       if (
         surface === 'operator' &&
+        path === '/api/operator/twitch' &&
+        request.method === 'GET'
+      ) {
+        if (request.headers['x-operator-request'] !== '1')
+          return json(response, 403, { error: 'Operator request required' });
+        return json(response, 200, session.operatorTwitchState());
+      }
+      if (
+        surface === 'operator' &&
         path === '/api/command' &&
         request.method === 'POST'
       ) {

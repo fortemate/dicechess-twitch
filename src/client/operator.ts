@@ -4,6 +4,7 @@ import type {
   PublicSnapshot,
 } from '../shared/protocol.ts';
 import type { OperatorGameState } from '../shared/game.ts';
+import type { TwitchOperatorState } from '../twitch/types.ts';
 import { renderBoard } from './board.ts';
 import { element, subscribe } from './view.ts';
 
@@ -14,6 +15,8 @@ let connected = false;
 let pending = false;
 let selected: string | undefined;
 let lastPositionVersion = -1;
+let twitch:
+  (TwitchOperatorState & { sessionId: string; revision: number }) | undefined;
 
 function ready() {
   return (
@@ -29,6 +32,12 @@ function updateControls() {
   element<HTMLFieldSetElement>('controls').disabled =
     !authority || !connected || pending;
   element<HTMLFieldSetElement>('game-controls').disabled = !ready();
+  element<HTMLFieldSetElement>('twitch-controls').disabled =
+    !authority || !connected || pending;
+  const connect = element<HTMLButtonElement>('twitch-connect');
+  connect.hidden = !twitch?.canConnect;
+  const disconnect = element<HTMLButtonElement>('twitch-disconnect');
+  disconnect.hidden = !twitch?.canDisconnect;
   const color = element<HTMLSelectElement>('streamer-color');
   color.disabled = !controls?.canStart || !ready();
   if (snapshot && snapshot.game.phase !== 'idle')
@@ -75,11 +84,40 @@ async function loadControls() {
   }
 }
 
+async function loadTwitch() {
+  try {
+    const response = await fetch('/api/operator/twitch', {
+      headers: { 'X-Operator-Request': '1' },
+    });
+    if (!response.ok) return;
+    const next = (await response.json()) as TwitchOperatorState & {
+      sessionId: string;
+      revision: number;
+    };
+    if (
+      !snapshot ||
+      next.sessionId !== snapshot.sessionId ||
+      next.revision < (twitch?.revision ?? -1)
+    )
+      return;
+    twitch = next;
+    element('twitch-activation').hidden = !next.activation;
+    element('twitch-code').textContent = next.activation?.userCode ?? '';
+    const link = element<HTMLAnchorElement>('twitch-authorize');
+    if (next.activation) link.href = next.activation.verificationUri;
+    else link.removeAttribute('href');
+    updateControls();
+  } catch {
+    /* Host connection health is rendered separately. */
+  }
+}
+
 subscribe(
   (next) => {
     if (snapshot && next.sessionId !== snapshot.sessionId) {
       authority = undefined;
       controls = undefined;
+      twitch = undefined;
       element('feedback').textContent =
         'Host restarted. Reload this operator page.';
     }
@@ -89,8 +127,26 @@ subscribe(
       lastPositionVersion = next.game.positionVersion;
     }
     snapshot = next;
+    const phase = next.twitch.phase;
+    element('twitch-description').textContent =
+      phase === 'not-configured'
+        ? 'Set TWITCH_CLIENT_ID to a registered public application ID, then restart.'
+        : phase === 'authorizing'
+          ? 'Approve read-only chat access on Twitch. Leave this app running.'
+          : phase === 'connected'
+            ? `Reading ${next.twitch.channel ?? 'broadcaster'} chat · ${next.twitch.receivedMessages} messages received.`
+            : phase === 'reconnecting'
+              ? next.twitch.healthy
+                ? 'Twitch is moving the connection. Chat delivery continues.'
+                : 'Chat connection lost. Waiting to reconnect; the saved game stays paused.'
+              : phase === 'revoked'
+                ? 'Twitch authorization ended. Connect again to continue.'
+                : phase === 'error'
+                  ? 'Twitch setup failed. Connect again to retry.'
+                  : 'Connect your broadcaster account to read chat.';
     updateControls();
     void loadControls();
+    void loadTwitch();
   },
   (live) => {
     connected = live;
@@ -108,6 +164,7 @@ try {
   element('operator-note').textContent = bootstrap.operatorNote;
   updateControls();
   void loadControls();
+  void loadTwitch();
 } catch {
   element('feedback').textContent =
     'Operator unavailable. Reload after the host restarts.';
@@ -205,3 +262,9 @@ for (const action of ['roll', 'pause', 'resume', 'rematch'] as const)
   element(action).onclick = () => {
     void send({ action });
   };
+element('twitch-connect').onclick = () => {
+  void send({ action: 'twitch-connect' });
+};
+element('twitch-disconnect').onclick = () => {
+  void send({ action: 'twitch-disconnect' });
+};
