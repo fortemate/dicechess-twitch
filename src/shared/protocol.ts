@@ -7,6 +7,8 @@ import type { PublicVoting } from './voting.ts';
 export interface PublicSnapshot {
   sessionId: string;
   revision: number;
+  /** Revision of meaningful operator state; commands use this, not display ordering. */
+  controlRevision: number;
   updatedAt: string;
   message: string;
   integration: 'not-connected' | 'connected';
@@ -24,6 +26,7 @@ export interface OperatorBootstrap {
 
 interface CommandIdentity {
   sessionId: string;
+  /** Must match PublicSnapshot.controlRevision. */
   expectedRevision: number;
 }
 

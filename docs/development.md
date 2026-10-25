@@ -157,9 +157,12 @@ Both servers bind only `127.0.0.1`; use the documented numeric addresses, not
 `localhost`. OBS serves only its HTML/JS/CSS, `GET /api/snapshot` and
 `GET /api/events`. It rejects mutations at the HTTP boundary. The operator page
 obtains a process-local capability with a same-origin custom-header request.
-Commands also require the exact operator origin and current session/revision. No
-capability is written to a URL, disk or logs. This protects browser surfaces,
-not other processes on the machine.
+Commands also require the exact operator origin and current
+session/`controlRevision`. Display `revision` continues to order SSE updates;
+chat counters and countdown ticks do not invalidate pending controls. Every
+accepted command consumes a control revision. No capability is written to a URL,
+disk or logs. This protects browser surfaces, not other processes on the
+machine.
 
 The public snapshot is an explicit allowlist and never serializes private
 configuration. `.env`, `.env.*`, `mise.local.toml` and `.local/` are gitignored.

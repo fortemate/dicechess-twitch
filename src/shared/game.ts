@@ -43,6 +43,7 @@ export interface PublicGame {
 
 export interface OperatorGameState {
   sessionId: string;
+  /** The control revision, independent from display-only broadcasts. */
   revision: number;
   legalActions: readonly string[];
   canStart: boolean;

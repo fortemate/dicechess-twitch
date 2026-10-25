@@ -11,18 +11,22 @@ See [development](development.md) for verified commands and current limitations.
 
 One Node.js process binds two loopback listeners: operator on `127.0.0.1:4310`, read-only OBS on
 `127.0.0.1:4311`. Separate client bundles receive the same initial and updated public snapshot via
-SSE. Snapshot projection includes session ID, revision, timestamp, on-air message, an explicit
+SSE. Snapshot projection includes session ID, display/control revisions, timestamp, on-air message, an explicit
 sanitized Twitch health, vote totals/deadlines and a [public game projection](game-state.md). Legal action controls,
 engine scores and operator configuration stay outside that projection.
 
 Only the operator listener exposes bootstrap/command routes. Bootstrap requires a custom request
 header; mutation requires the operator origin, an in-memory capability and the current session
-ID/revision. Host checks reject DNS rebinding; neither listener enables CORS. OBS has no operator
+ID/control revision. Host checks reject DNS rebinding; neither listener enables CORS. OBS has no operator
 assets/routes, and its CSP restricts connections to its own origin. This is a local browser boundary,
 not authentication against other software/users on the machine. Do not expose the listeners publicly.
 
-Accepted commands and asynchronous game transitions advance host revisions. Stale/repeated commands
-return 409. SSE reconnect returns the latest snapshot. A host restart creates a fresh session and
+Display `revision` orders every SSE update, including chat counters, vote totals, countdowns and
+preview frames. Commands send `expectedRevision: snapshot.controlRevision`; operator game controls
+use that same counter. It advances on game, poll-phase, settings, connection or storage changes and
+every accepted command, including unchanged settings. Display-only traffic keeps controls valid.
+The private Twitch activation DTO retains display ordering because activation can change while
+board controls stay valid. Stale/repeated commands return 409. SSE reconnect returns the latest snapshot. A host restart creates a fresh session and
 capability; the operator must reload. A validated checkpoint restores the committed game paused,
 including the original roll, frozen choices and next unplayed animation action. Lost poll votes
 are discarded under a new round ID; OAuth material is never persisted.

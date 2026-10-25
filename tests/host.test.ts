@@ -38,7 +38,7 @@ function command(
 ) {
   return {
     sessionId: state.sessionId,
-    expectedRevision: state.revision,
+    expectedRevision: state.controlRevision,
     action: 'set-message',
     message,
   };
@@ -200,25 +200,25 @@ test('invalid commands and oversized bodies do not change state or echo private 
     { ...command(original), action: 'resolve-choice' },
     {
       sessionId: original.sessionId,
-      expectedRevision: original.revision,
+      expectedRevision: original.controlRevision,
       action: 'set-vote-duration',
       seconds: 0,
     },
     {
       sessionId: original.sessionId,
-      expectedRevision: original.revision,
+      expectedRevision: original.controlRevision,
       action: 'set-vote-duration',
       seconds: 121,
     },
     {
       sessionId: original.sessionId,
-      expectedRevision: original.revision,
+      expectedRevision: original.controlRevision,
       action: 'set-vote-duration',
       seconds: '30',
     },
     {
       sessionId: original.sessionId,
-      expectedRevision: original.revision,
+      expectedRevision: original.controlRevision,
       action: 'extend-vote',
       option: 2,
     },
@@ -237,6 +237,7 @@ test('invalid commands and oversized bodies do not change state or echo private 
 test('public snapshots and broadcast assets contain neither operator data nor capability', async () => {
   const state = await snapshot(host.obsUrl);
   assert.deepEqual(Object.keys(state).sort(), [
+    'controlRevision',
     'game',
     'integration',
     'message',

@@ -25,6 +25,7 @@ export class Session {
   #state = {
     sessionId: randomUUID(),
     revision: 0,
+    controlRevision: 0,
     updatedAt: new Date().toISOString(),
     message: 'One board. A whole chat.',
   };
@@ -42,6 +43,8 @@ export class Session {
   #lastSaved = '';
   #lastCheckpoint: SessionCheckpoint | undefined;
   #disposed = false;
+  #controlKey: string | undefined;
+  #operatorMutation = false;
   constructor(options: SessionOptions = {}) {
     const {
       twitchClientId,
@@ -107,6 +110,7 @@ export class Session {
       this.preview.observe();
     }
     this.#persist();
+    this.#updateControlRevision();
   }
 
   onChange(listener: () => void) {
@@ -126,9 +130,33 @@ export class Session {
     }
     this.voting?.observe();
     this.#persist();
+    this.#updateControlRevision();
     this.#state.revision++;
     this.#state.updatedAt = new Date().toISOString();
     this.#onChange?.();
+  }
+  #updateControlRevision() {
+    const twitch = this.twitch.snapshot();
+    const voting = this.voting.snapshot();
+    const key = JSON.stringify({
+      game: this.game.snapshot(),
+      controls: this.game.controls(),
+      message: this.#state.message,
+      voting: { phase: voting.phase, durationMs: voting.durationMs },
+      twitch: {
+        phase: twitch.phase,
+        healthy: twitch.healthy,
+        channel: twitch.channel,
+      },
+      storageError: this.#storageError,
+    });
+    if (
+      this.#controlKey !== undefined &&
+      (this.#controlKey !== key || this.#operatorMutation)
+    )
+      this.#state.controlRevision++;
+    this.#controlKey = key;
+    this.#operatorMutation = false;
   }
   dispose() {
     if (this.#disposed) return;
@@ -151,6 +179,7 @@ export class Session {
   operatorTwitchState() {
     return {
       sessionId: this.#state.sessionId,
+      // Private activation data can change without invalidating board controls.
       revision: this.#state.revision,
       ...this.twitch.operatorState(),
     };
@@ -159,7 +188,7 @@ export class Session {
   operatorState(): OperatorGameState {
     return {
       sessionId: this.#state.sessionId,
-      revision: this.#state.revision,
+      revision: this.#state.controlRevision,
       ...this.game.controls(),
       canExtendVote: this.voting.canExtend(),
       canSetVoteDuration: this.voting.canConfigure(),
@@ -173,6 +202,7 @@ export class Session {
     return {
       sessionId: state.sessionId,
       revision: state.revision,
+      controlRevision: state.controlRevision,
       updatedAt: state.updatedAt,
       message: state.message,
       integration: this.twitch.snapshot().healthy
@@ -193,7 +223,7 @@ export class Session {
   apply(command: OperatorCommand): PublicSnapshot | undefined {
     if (
       command.sessionId !== this.#state.sessionId ||
-      command.expectedRevision !== this.#state.revision
+      command.expectedRevision !== this.#state.controlRevision
     )
       return undefined;
     if (
@@ -204,50 +234,55 @@ export class Session {
     )
       return undefined;
     let accepted = false;
-    switch (command.action) {
-      case 'set-message':
-        this.#state.message = command.message.trim();
-        this.#changed();
-        accepted = true;
-        break;
-      case 'start':
-        accepted = this.game.start(command.streamerColor);
-        break;
-      case 'roll':
-        accepted = this.game.roll();
-        break;
-      case 'move':
-        accepted = this.game.move(command.uci);
-        break;
-      case 'pause':
-        accepted = this.game.pause();
-        break;
-      case 'resume':
-        accepted = this.game.resume();
-        break;
-      case 'rematch':
-        accepted =
-          this.game.controls().canRematch &&
-          this.game.start(this.game.snapshot().streamerColor);
-        break;
-      case 'twitch-connect':
-        accepted = this.twitch.connect();
-        break;
-      case 'twitch-disconnect':
-        accepted = this.twitch.disconnect();
-        break;
-      case 'extend-vote':
-        accepted = this.voting.extend();
-        break;
-      case 'set-vote-duration':
-        accepted = this.voting.setDuration(command.seconds);
-        break;
-      case 'retry-save':
-        accepted = this.#retrySave();
-        break;
+    this.#operatorMutation = true;
+    try {
+      switch (command.action) {
+        case 'set-message':
+          this.#state.message = command.message.trim();
+          this.#changed();
+          accepted = true;
+          break;
+        case 'start':
+          accepted = this.game.start(command.streamerColor);
+          break;
+        case 'roll':
+          accepted = this.game.roll();
+          break;
+        case 'move':
+          accepted = this.game.move(command.uci);
+          break;
+        case 'pause':
+          accepted = this.game.pause();
+          break;
+        case 'resume':
+          accepted = this.game.resume();
+          break;
+        case 'rematch':
+          accepted =
+            this.game.controls().canRematch &&
+            this.game.start(this.game.snapshot().streamerColor);
+          break;
+        case 'twitch-connect':
+          accepted = this.twitch.connect();
+          break;
+        case 'twitch-disconnect':
+          accepted = this.twitch.disconnect();
+          break;
+        case 'extend-vote':
+          accepted = this.voting.extend();
+          break;
+        case 'set-vote-duration':
+          accepted = this.voting.setDuration(command.seconds);
+          break;
+        case 'retry-save':
+          accepted = this.#retrySave();
+          break;
+      }
+      if (!accepted) return undefined;
+      return this.snapshot();
+    } finally {
+      this.#operatorMutation = false;
     }
-    if (!accepted) return undefined;
-    return this.snapshot();
   }
 
   checkpoint(): SessionCheckpoint {

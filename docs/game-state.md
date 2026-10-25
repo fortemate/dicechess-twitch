@@ -17,10 +17,12 @@ and sanitized health, with real-channel verification still pending.
 
 `Game` owns the DFEN, original rolled DFEN, current legal-tree node/prefix,
 candidate set, round ID, animation cursor, resolved-round guard and timers.
-`Session` owns the process session ID, public revision and on-air message. Every
-accepted command or asynchronous game transition publishes a new host revision.
-The browser renders; it never rolls, searches, validates rules or decides that a
-turn has completed.
+`Session` owns the process session ID, display/control revisions and on-air
+message. Every accepted command or asynchronous game transition publishes a new
+display revision. The control revision advances for meaningful operator state
+changes and every accepted command; chat counters, vote totals, preview frames
+and countdown ticks do not advance it. The browser renders; it never rolls,
+searches, validates rules or decides that a turn has completed.
 
 | Phase                          | Allowed progression                                                                                                                                                                                       |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -72,10 +74,10 @@ action; resume continues from that cursor.
 ## Operator and broadcast boundary
 
 Operator HTTP commands are `start`, `roll`, `move`, `pause`, `resume`, `rematch`
-and `set-message`, all scoped to the latest session/revision. Commands require
-the existing operator-origin/capability boundary. Legal action names and control
-availability come from the operator-only `GET /api/operator/state`, which
-requires the same-origin custom header. Neither this endpoint nor operator
+and `set-message`, all scoped to the latest session/`controlRevision`. Commands
+require the existing operator-origin/capability boundary. Legal action names and
+control availability come from the operator-only `GET /api/operator/state`,
+which requires the same-origin custom header. Neither this endpoint nor operator
 assets exist on the OBS listener.
 
 Public snapshots explicitly project board/roll, phase, position/round IDs,

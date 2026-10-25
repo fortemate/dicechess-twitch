@@ -134,7 +134,7 @@ test('disk restart restores a partial turn; OBS reconnects and old operator auth
       body: JSON.stringify({
         action: 'resume',
         sessionId: before.sessionId,
-        expectedRevision: before.revision,
+        expectedRevision: before.controlRevision,
       }),
     });
     expect(denied.status).toBe(403);

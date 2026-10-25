@@ -5,6 +5,76 @@ import { join, resolve } from 'node:path';
 import { FileStore } from '../../src/host/file-store.ts';
 import { Session } from '../../src/host/session.ts';
 import { startHost } from '../../src/host/server.ts';
+import {
+  authFixture,
+  chat,
+  clientId,
+  FakeSocket,
+  flush,
+  welcome,
+} from '../twitch-fixtures.ts';
+
+test('Pause and Resume remain usable when chat arrives after the browser sends a command', async ({
+  page,
+}) => {
+  const sockets: FakeSocket[] = [];
+  const session = new Session({
+    twitchClientId: clientId,
+    twitchFetch: authFixture().fetcher,
+    twitchSocket: () => {
+      const socket = new FakeSocket();
+      sockets.push(socket);
+      return socket;
+    },
+  });
+  const host = await startHost({
+    operatorPort: 0,
+    obsPort: 0,
+    clientDirectory: resolve('dist/client'),
+    session,
+  });
+  let traffic: ReturnType<typeof setInterval> | undefined;
+  try {
+    session.twitch.connect();
+    await expect.poll(() => sockets.length, { timeout: 10000 }).toBe(1);
+    sockets[0]!.receive(welcome());
+    await flush();
+    session.game.start('w');
+    await page.goto(host.operatorUrl);
+    let delivered = 0;
+    // Deterministically exercise the read/send gap without relying on load timing.
+    // Twitch authorization/socket traffic is fixture-only; HTTP/UI are real.
+    await page.route('**/api/command', async (route) => {
+      sockets[0]!.receive(chat(`control-gap-${delivered++}`));
+      await route.continue();
+    });
+    let background = 0;
+    traffic = setInterval(
+      () => sockets[0]!.receive(chat(`control-background-${background++}`)),
+      20,
+    );
+    for (const [button, phase] of [
+      ['Pause game', 'paused'],
+      ['Resume game', 'streamer roll'],
+      ['Pause game', 'paused'],
+    ] as const) {
+      const reply = page.waitForResponse((response) =>
+        response.url().endsWith('/api/command'),
+      );
+      await page.getByRole('button', { name: button, exact: true }).click();
+      expect((await reply).status()).toBe(200);
+      await expect(page.locator('#phase')).toHaveText(phase);
+    }
+    expect(delivered).toBe(3);
+    expect(background).toBeGreaterThan(0);
+    expect(session.snapshot().twitch.receivedMessages).toBe(
+      delivered + background,
+    );
+  } finally {
+    clearInterval(traffic);
+    await host.close();
+  }
+});
 
 test('restored form values match the host and unrelated snapshots preserve unpublished drafts', async ({
   page,
@@ -17,7 +87,7 @@ test('restored form values match the host and unrelated snapshots preserve unpub
   source.apply({
     action: 'set-message',
     sessionId: before.sessionId,
-    expectedRevision: before.revision,
+    expectedRevision: before.controlRevision,
     message: 'Saved operator message',
   });
   source.dispose();
@@ -51,7 +121,7 @@ test('restored form values match the host and unrelated snapshots preserve unpub
     session.apply({
       action: 'set-message',
       sessionId: current.sessionId,
-      expectedRevision: current.revision,
+      expectedRevision: current.controlRevision,
       message: 'New authoritative message',
     });
     session.voting.setDuration(50);

@@ -166,7 +166,7 @@ test('partial streamer turn restores paused with the exact roll/prefix and fresh
       restored.apply({
         action: 'resume',
         sessionId: before.sessionId,
-        expectedRevision: before.revision,
+        expectedRevision: before.controlRevision,
       }),
       undefined,
     );
@@ -384,7 +384,7 @@ test('storage failure before animation stops all move timers until an explicit s
       session.apply({
         action: 'retry-save',
         sessionId: current.sessionId,
-        expectedRevision: current.revision,
+        expectedRevision: current.controlRevision,
       }),
     );
     assert.equal(session.snapshot().game.phase, 'paused');
@@ -440,7 +440,7 @@ test('an unsaved micro-move is rolled back before publication and a retry resume
     session.apply({
       action: 'retry-save',
       sessionId: state.sessionId,
-      expectedRevision: state.revision,
+      expectedRevision: state.controlRevision,
     });
     session.game.resume();
     await flush();

@@ -72,7 +72,7 @@ test(
             body: JSON.stringify({
               action,
               sessionId: current.sessionId,
-              expectedRevision: current.revision,
+              expectedRevision: current.controlRevision,
               ...extra,
             }),
           });

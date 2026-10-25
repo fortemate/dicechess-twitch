@@ -25,7 +25,7 @@ function ready() {
     !pending &&
     !!controls &&
     !!snapshot &&
-    controls.revision === snapshot.revision
+    controls.revision === snapshot.controlRevision
   );
 }
 function updateControls() {
@@ -209,7 +209,7 @@ async function send(action: Action) {
       },
       body: JSON.stringify({
         sessionId: snapshot.sessionId,
-        expectedRevision: snapshot.revision,
+        expectedRevision: snapshot.controlRevision,
         ...action,
       }),
     });

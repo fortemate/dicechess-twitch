@@ -34,7 +34,7 @@ try {
   session.apply({
     action: 'set-message',
     sessionId: current.sessionId,
-    expectedRevision: current.revision,
+    expectedRevision: current.controlRevision,
     message: `FIXTURE · ${name} · No Twitch channel`,
   });
   const host = await startHost({
