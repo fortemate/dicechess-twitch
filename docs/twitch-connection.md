@@ -3,10 +3,10 @@
 Issue:
 [fortemate/dicechess-twitch#5](https://github.com/fortemate/dicechess-twitch/issues/5).
 OAuth/EventSub code and local fixture checks are implemented. Owner onboarding
-has verified a real broadcaster authorization and receipt of real chat messages.
-**A completed real vote and full channel/broadcast rehearsal remain
-unverified.** Keep the issue open until its remaining acceptance checks are
-recorded.
+has verified a real broadcaster authorization, receipt of real chat messages and
+one owner-operated chat vote that executed the selected complete legal turn.
+**An independent-viewer full game and broadcast rehearsal remain unverified.**
+Keep the issue open until its remaining acceptance checks are recorded.
 
 ## Owner setup and real verification
 
@@ -99,7 +99,8 @@ that boundary; sustained silence still marks the transport unhealthy and pauses
 the game. The local host prints fixed interruption categories such as
 `keepalive-timeout` or `socket-error` for diagnosis, never raw frames,
 identifiers, chat content, authorization URLs or provider error text. This
-tolerance is fixture-tested; stability on the owner's real network still needs
+tolerance is fixture-tested. An initial idle observation and one owner-operated
+real vote completed after this change; prolonged network stability still needs
 verification.
 
 Graceful handoff remains healthy. Actual loss/revocation pauses an active game.
