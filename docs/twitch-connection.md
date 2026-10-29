@@ -2,9 +2,11 @@
 
 Issue:
 [fortemate/dicechess-twitch#5](https://github.com/fortemate/dicechess-twitch/issues/5).
-OAuth/EventSub code and local fixture checks are implemented. **A real
-broadcaster authorization and real channel rehearsal have not been performed.**
-Keep the issue open until the owner completes and records those checks.
+OAuth/EventSub code and local fixture checks are implemented. Owner onboarding
+has verified a real broadcaster authorization and receipt of real chat messages.
+**A completed real vote and full channel/broadcast rehearsal remain
+unverified.** Keep the issue open until its remaining acceptance checks are
+recorded.
 
 ## Owner setup and real verification
 
@@ -47,6 +49,13 @@ chat messages or requests write/bot/moderation permissions. Its authenticated
 user is also the subscribed broadcaster. See
 [installed chatbot permissions](https://dev.twitch.tv/docs/chat/authenticating/).
 
+The validated activation link explicitly selects `public=true`, as shown in
+Twitch's device-flow documentation. Some device responses omit this parameter;
+the generic activation page can reject a matching code. Use the current link
+from the operator page rather than an older activation tab. If the attempt has
+ended, reconnect to obtain a fresh code. Activation material must not be saved
+in screenshots or troubleshooting logs.
+
 ## Authorization boundary
 
 The host uses Twitch's
@@ -83,6 +92,15 @@ ping/pong. A graceful reconnect keeps the old socket until the new welcome and
 transfers subscriptions without another POST. Actual loss closes stale sockets,
 retries with capped backoff and subscribes on a fresh session. Only validated
 official Twitch reconnect destinations are accepted, passed unchanged.
+
+The silence watchdog allows 20% timing jitter, capped at five extra seconds,
+after the advertised keepalive interval. This avoids racing a message sent at
+that boundary; sustained silence still marks the transport unhealthy and pauses
+the game. The local host prints fixed interruption categories such as
+`keepalive-timeout` or `socket-error` for diagnosis, never raw frames,
+identifiers, chat content, authorization URLs or provider error text. This
+tolerance is fixture-tested; stability on the owner's real network still needs
+verification.
 
 Graceful handoff remains healthy. Actual loss/revocation pauses an active game.
 An interrupted preview/vote receives a new round ID while retaining the exact

@@ -127,7 +127,7 @@ test('loss/keepalive timeout cause a fresh session subscription; stop cancels re
     sockets[0]!.receive(packet('session_keepalive', {}));
     context.mock.timers.tick(9000);
     assert.equal(sockets.length, 1);
-    context.mock.timers.tick(1001);
+    context.mock.timers.tick(3001);
     assert.deepEqual(health.at(-1), { phase: 'reconnecting', healthy: false });
     context.mock.timers.tick(1000);
     assert.equal(sockets.length, 2);
@@ -139,6 +139,151 @@ test('loss/keepalive timeout cause a fresh session subscription; stop cancels re
     context.mock.timers.tick(60000);
     assert.equal(sockets.length, 2);
     assert.deepEqual(health.at(-1), { phase: 'offline', healthy: false });
+  } finally {
+    client.stop();
+  }
+});
+
+test('slightly delayed keepalives remain healthy while real silence still reconnects', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const socket = new FakeSocket();
+  const health: TransportHealth[] = [];
+  const failures: string[] = [];
+  const client = new EventSubClient({
+    broadcasterId: '100',
+    socket: () => socket,
+    subscribe: async () => {},
+    onChat: () => {},
+    onHealth: (state) => health.push(state),
+    diagnostic: (reason) => failures.push(reason),
+  });
+  try {
+    client.start();
+    socket.receive(welcome());
+    await flush();
+    for (let interval = 0; interval < 3; interval++) {
+      context.mock.timers.tick(10050);
+      assert.equal(socket.closed, false);
+      assert.deepEqual(health.at(-1), { phase: 'connected', healthy: true });
+      socket.receive(packet('session_keepalive', {}));
+    }
+    socket.receive(chat('resets-liveness'));
+    context.mock.timers.tick(11999);
+    assert.equal(socket.closed, false);
+    context.mock.timers.tick(2);
+    assert.equal(socket.closed, true);
+    assert.deepEqual(failures, ['keepalive-timeout']);
+    assert.deepEqual(health.at(-1), { phase: 'reconnecting', healthy: false });
+  } finally {
+    client.stop();
+  }
+});
+
+test('keepalive jitter allowance remains bounded for long negotiated intervals', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const socket = new FakeSocket();
+  const failures: string[] = [];
+  const client = new EventSubClient({
+    broadcasterId: '100',
+    socket: () => socket,
+    subscribe: async () => {},
+    onChat: () => {},
+    onHealth: () => {},
+    diagnostic: (reason) => failures.push(reason),
+  });
+  try {
+    client.start();
+    socket.receive(
+      packet('session_welcome', {
+        session: { id: 'long', keepalive_timeout_seconds: 600 },
+      }),
+    );
+    await flush();
+    context.mock.timers.tick(604999);
+    assert.equal(socket.closed, false);
+    context.mock.timers.tick(1);
+    assert.equal(socket.closed, true);
+    assert.deepEqual(failures, ['keepalive-timeout']);
+  } finally {
+    client.stop();
+  }
+});
+
+test('failure diagnostics distinguish transport paths without provider text or identifiers', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  for (const expected of [
+    'socket-create-failed',
+    'welcome-timeout',
+    'socket-closed',
+    'socket-error',
+    'subscription-failed',
+    'invalid-reconnect',
+    'chat-handler-failed',
+  ]) {
+    const socket = new FakeSocket();
+    const failures: string[] = [];
+    const client = new EventSubClient({
+      broadcasterId: '100',
+      socket: () => {
+        if (expected === 'socket-create-failed')
+          throw new Error('fixture-private-detail');
+        return socket;
+      },
+      subscribe: async () => {
+        if (expected === 'subscription-failed')
+          throw new Error('fixture-private-detail');
+      },
+      onChat: () => {
+        throw new Error('fixture-private-detail');
+      },
+      onHealth: () => {},
+      diagnostic: (reason) => failures.push(reason),
+    });
+    try {
+      client.start();
+      if (expected === 'welcome-timeout') context.mock.timers.tick(10001);
+      else if (expected !== 'socket-create-failed') {
+        socket.receive(welcome());
+        await flush();
+        if (expected === 'socket-closed') socket.drop();
+        if (expected === 'socket-error') socket.error();
+        if (expected === 'invalid-reconnect')
+          socket.receive(
+            packet('session_reconnect', {
+              session: {
+                reconnect_url: 'wss://attacker.invalid/private-fixture',
+              },
+            }),
+          );
+        if (expected === 'chat-handler-failed') socket.receive(chat());
+      }
+      assert.deepEqual(failures, [expected]);
+    } finally {
+      client.stop();
+    }
+  }
+});
+
+test('a failing diagnostic sink cannot prevent fail-closed recovery', async () => {
+  const socket = new FakeSocket();
+  const health: TransportHealth[] = [];
+  const client = new EventSubClient({
+    broadcasterId: '100',
+    socket: () => socket,
+    subscribe: async () => {},
+    onChat: () => {},
+    onHealth: (state) => health.push(state),
+    diagnostic: () => {
+      throw new Error('fixture-private-diagnostic-error');
+    },
+  });
+  try {
+    client.start();
+    socket.receive(welcome());
+    await flush();
+    assert.doesNotThrow(() => socket.error());
+    assert.deepEqual(health.at(-1), { phase: 'reconnecting', healthy: false });
+    assert.equal(socket.closed, true);
   } finally {
     client.stop();
   }
