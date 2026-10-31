@@ -148,11 +148,17 @@ test('browser displays a host preview frame without changing the game and rejoin
       frozen.preview.dfen!,
     );
     await expect(page.locator('#board .trace')).toHaveCount(2);
+    await expect(page.locator('.choice.previewing .choice-state')).toHaveText(
+      'Preview',
+    );
     await page.reload();
     await expect(page.locator('#phase')).toHaveText('paused');
     await expect(page.locator('#board')).toHaveAttribute(
       'data-dfen',
       frozen.preview.dfen!,
+    );
+    await expect(page.locator('.choice.previewing .choice-state')).toHaveText(
+      'Preview',
     );
     expect(session.snapshot().preview).toEqual(frozen.preview);
     session.game.resume();
@@ -162,6 +168,9 @@ test('browser displays a host preview frame without changing the game and rejoin
     await expect(page.locator('#board')).toHaveAttribute(
       'data-dfen',
       frozen.game.rolledDfen!,
+    );
+    await expect(page.locator('.choice.previewing, .choice-state')).toHaveCount(
+      0,
     );
     expect(session.snapshot().game.positionVersion).toBe(
       frozen.game.positionVersion,

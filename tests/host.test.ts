@@ -48,7 +48,16 @@ test('bundled artwork loads on both surfaces without opening arbitrary file acce
     const license = await fetch(`${url}/pieces/cburnett/LICENSE.txt`);
     assert.equal(license.status, 200);
     assert.match(await license.text(), /Version 3, 29 June 2007/);
+    const mark = await fetch(`${url}/brand/fortemate-mark-white.svg`);
+    assert.equal(mark.status, 200);
+    assert.equal(mark.headers.get('content-type'), 'image/svg+xml');
+    assert.match(await mark.text(), /viewBox="0 0 14 14"/);
+    const brandNotice = await fetch(`${url}/brand/NOTICE.txt`);
+    assert.equal(brandNotice.status, 200);
+    assert.match(await brandNotice.text(), /All rights reserved/);
     for (const path of [
+      'brand/unknown.svg',
+      'brand/%2e%2e%2fpackage.json',
       'pieces/cburnett/unknown.svg',
       'pieces/cburnett/%2e%2e%2fpackage.json',
       'package.json',
@@ -59,6 +68,14 @@ test('bundled artwork loads on both surfaces without opening arbitrary file acce
   assert.equal(
     (await fetch(`${host.obsUrl}/pieces/cburnett/wK.svg`, { method: 'POST' }))
       .status,
+    405,
+  );
+  assert.equal(
+    (
+      await fetch(`${host.obsUrl}/brand/fortemate-mark-white.svg`, {
+        method: 'POST',
+      })
+    ).status,
     405,
   );
 });

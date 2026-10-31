@@ -59,6 +59,18 @@ retained; piece images do not intercept board input. Artwork is served locally
 on both listeners, including its attribution/license notice. See
 [provenance](provenance.md) for reuse terms.
 
+The surrounding interface uses Fortemate's white Six Cells mark and the graphite
+palette used for the channel artwork: background `#101214`, white foreground,
+secondary text `#bec3c8` and dividers `#373d43`. Neutral panel surfaces are
+application UI choices, not an additional official brand palette. The symbol
+keeps its original geometry and clear space; the plain-text wordmark is
+provisional typography. A small green dot indicates a healthy connection, always
+alongside a text status. Preview and chosen cards have explicit labels in
+addition to their neutral outlines. Session/revision diagnostics remain in the
+operator view and in hidden OBS DOM fields for renderer synchronization; they do
+not appear on air. The board colors, piece assets and host-owned game state are
+unchanged by the theme.
+
 ## Evidence and remaining validation
 
 `npm run check` verifies special-move descriptions, exact final states,
