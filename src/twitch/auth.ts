@@ -194,11 +194,14 @@ export class TwitchAuth {
         (uri.port && uri.port !== '443')
       )
         throw new Error('Invalid activation destination');
+      // Twitch can omit the public-client mode from verification_uri. Without
+      // it, the activation page rejects an otherwise matching device user code.
+      uri.searchParams.set('public', 'true');
       if (this.#attempt !== attempt || attempt.signal.aborted) return;
       const expiresAtMs = Date.now() + body.expires_in * 1000;
       this.#activation = {
         userCode: body.user_code,
-        verificationUri: body.verification_uri,
+        verificationUri: uri.toString(),
         expiresAtMs,
       };
       this.#options.changed();

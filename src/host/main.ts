@@ -12,6 +12,10 @@ try {
   );
   session = new Session({
     store,
+    // Fixed local categories only: never log raw frames, identifiers, provider
+    // error text, authorization material or chat content.
+    twitchDiagnostic: (reason) =>
+      console.warn(`Twitch chat interrupted (${reason}); reconnecting.`),
     ...(process.env.TWITCH_CLIENT_ID
       ? { twitchClientId: process.env.TWITCH_CLIENT_ID }
       : {}),

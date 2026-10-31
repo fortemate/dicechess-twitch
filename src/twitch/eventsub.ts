@@ -31,6 +31,15 @@ export interface TransportHealth {
   phase: 'offline' | 'connecting' | 'connected' | 'reconnecting' | 'revoked';
   healthy: boolean;
 }
+export type TransportFailure =
+  | 'socket-create-failed'
+  | 'welcome-timeout'
+  | 'socket-closed'
+  | 'socket-error'
+  | 'subscription-failed'
+  | 'invalid-reconnect'
+  | 'chat-handler-failed'
+  | 'keepalive-timeout';
 interface Link {
   socket: SocketPort;
   abort: AbortController;
@@ -46,6 +55,7 @@ interface Options {
   onChat: (event: ChatMessage) => void;
   onHealth: (state: TransportHealth) => void;
   socket?: SocketFactory;
+  diagnostic?: (reason: TransportFailure) => void;
 }
 
 export class EventSubClient {
@@ -83,7 +93,7 @@ export class EventSubClient {
     try {
       socket = (this.#options.socket ?? nativeSocket)(url);
     } catch {
-      this.#lost();
+      this.#lost('socket-create-failed');
       return;
     }
     const link: Link = {
@@ -98,16 +108,17 @@ export class EventSubClient {
     if (handoff) this.#handoff = link;
     else this.#active = link;
     link.welcomeTimer = setTimeout(() => {
-      if (this.#current(link)) this.#lost();
+      if (this.#current(link)) this.#lost('welcome-timeout');
     }, 10000);
     socket.onMessage((raw) => {
       if (this.#current(link)) this.#message(link, raw);
     });
-    const lost = () => {
-      if (this.#current(link)) this.#lost();
-    };
-    socket.onClose(lost);
-    socket.onError(lost);
+    socket.onClose(() => {
+      if (this.#current(link)) this.#lost('socket-closed');
+    });
+    socket.onError(() => {
+      if (this.#current(link)) this.#lost('socket-error');
+    });
   }
 
   #message(link: Link, raw: string) {
@@ -142,7 +153,7 @@ export class EventSubClient {
           .catch((error: unknown) => {
             if (!this.#current(link)) return;
             if (error instanceof AuthorizationRequired) this.stop('revoked');
-            else this.#lost();
+            else this.#lost('subscription-failed');
           });
       }
       return;
@@ -159,7 +170,7 @@ export class EventSubClient {
     if (packet.type === 'reconnect') {
       if (link !== this.#active || !link.ready || this.#handoff) return;
       if (!validReconnectUrl(packet.url)) {
-        this.#lost();
+        this.#lost('invalid-reconnect');
         return;
       }
       this.#options.onHealth({ phase: 'reconnecting', healthy: true });
@@ -182,15 +193,20 @@ export class EventSubClient {
     try {
       this.#options.onChat(packet.event);
     } catch {
-      this.#lost();
+      this.#lost('chat-handler-failed');
     }
   }
 
   #keepalive(link: Link) {
     clearTimeout(link.timer);
-    link.timer = setTimeout(() => {
-      if (this.#current(link)) this.#lost();
-    }, link.keepaliveMs);
+    // Do not race a keepalive sent at the advertised deadline. Bound network
+    // and event-loop jitter tolerance so actual silence still fails closed.
+    link.timer = setTimeout(
+      () => {
+        if (this.#current(link)) this.#lost('keepalive-timeout');
+      },
+      link.keepaliveMs + Math.min(5000, link.keepaliveMs * 0.2),
+    );
   }
   #close(link: Link) {
     clearTimeout(link.timer);
@@ -210,9 +226,14 @@ export class EventSubClient {
     this.#handoff = undefined;
     for (const link of links) if (link) this.#close(link);
   }
-  #lost() {
+  #lost(reason: TransportFailure) {
     if (this.#stopped) return;
     this.#clear();
+    try {
+      this.#options.diagnostic?.(reason);
+    } catch {
+      // A failed diagnostic sink must not prevent recovery or expose its error.
+    }
     this.#options.onHealth({ phase: 'reconnecting', healthy: false });
     const wait = Math.min(30000, 1000 * 2 ** Math.min(this.#attempt++, 5));
     this.#retry = setTimeout(() => {

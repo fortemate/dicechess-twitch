@@ -61,6 +61,39 @@ test('device flow requests only read-chat, keeps credentials host-only and valid
   }
 });
 
+test('public device activation retains provider parameters and explicitly selects public mode', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  for (const verificationUri of [
+    'https://www.twitch.tv/activate?device-code=ABCD-EFGH&fixture=retained',
+    'https://twitch.tv/activate?public=false&device-code=ABCD-EFGH&fixture=retained',
+    'https://www.twitch.tv/activate?public=true&device-code=ABCD-EFGH&fixture=retained',
+  ]) {
+    const fixture = authFixture({ verificationUri });
+    const auth = new TwitchAuth({
+      clientId,
+      fetcher: fixture.fetcher,
+      changed: () => {},
+      authorized: () => {},
+    });
+    try {
+      auth.connect();
+      await flush();
+      const activation = auth.operatorState().activation;
+      assert.ok(activation);
+      const destination = new URL(activation.verificationUri);
+      assert.equal(destination.searchParams.get('public'), 'true');
+      assert.equal(
+        destination.searchParams.get('device-code'),
+        activation.userCode,
+      );
+      assert.equal(destination.searchParams.get('fixture'), 'retained');
+      assert.equal(destination.hostname, new URL(verificationUri).hostname);
+    } finally {
+      auth.disconnect();
+    }
+  }
+});
+
 test('simultaneous 401s serialize refresh and retain rotated public-client credentials', async (context) => {
   context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
   const fixture = authFixture();
@@ -239,9 +272,11 @@ test('installed chat feeds the session adapter and an interrupted poll cannot si
   context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
   const fixture = authFixture();
   const sockets: FakeSocket[] = [];
+  const diagnostics: string[] = [];
   const session = new Session({
     twitchClientId: clientId,
     twitchFetch: fixture.fetcher,
+    twitchDiagnostic: (reason) => diagnostics.push(reason),
     twitchSocket: () => {
       const socket = new FakeSocket();
       sockets.push(socket);
@@ -297,6 +332,7 @@ test('installed chat feeds the session adapter and an interrupted poll cannot si
       '200:adapter-message:2026-10-25T01:00:00.123456789Z',
     ]);
     sockets[0]!.drop();
+    assert.deepEqual(diagnostics, ['socket-closed']);
     assert.equal(session.game.snapshot().phase, 'paused');
     assert.equal(session.game.resume(), false);
     assert.notEqual(session.game.snapshot().roundId, original.roundId);
