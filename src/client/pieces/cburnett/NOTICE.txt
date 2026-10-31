@@ -1,0 +1,18 @@
+Chess piece artwork: cburnett
+Author: Colin M. L. Burnett
+
+These twelve unmodified SVG files are the same artwork used by the Fortemate
+web play client. They are byte-identical to the cburnett SVGs embedded in
+@lichess-org/chessground 10.1.1 (GPL-3.0-or-later).
+
+Upstream artwork: https://github.com/lichess-org/lila/tree/master/public/piece/cburnett
+Author and license notice: https://github.com/lichess-org/lila/blob/master/COPYING.md
+Lila lists this set under GPL-2.0-or-later. This distribution uses the GNU
+General Public License version 3 or later. The full GPLv3 text is bundled in
+LICENSE.txt in this directory. The SVG files are their preferred editable form.
+
+Copied without changes from the public Fortemate web play client at:
+https://github.com/fortemate/dicechess-play/tree/8d8fc177c8ccff45246192f62585112b1a164d58/static/pieces/cburnett
+
+Board squares use the web client's plain colors #f0d9b5 and #b58863.
+No Chessground runtime code or television artwork is bundled here.

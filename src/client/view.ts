@@ -1,5 +1,5 @@
 import type { PublicSnapshot } from '../shared/protocol.ts';
-import { renderBoard, diceText } from './board.ts';
+import { renderBoard, renderDice } from './board.ts';
 
 export function element<T extends HTMLElement = HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -26,6 +26,11 @@ export function displayBoard(snapshot: PublicSnapshot) {
   };
 }
 
+/**
+ * Render monotonically ordered public snapshots from the host's event stream.
+ * Repeated revisions still restore transport health; callbacks let the operator
+ * synchronize its controls without giving the read-only scene command authority.
+ */
 export function subscribe(
   onSnapshot?: (snapshot: PublicSnapshot) => void,
   onConnection?: (connected: boolean) => void,
@@ -57,7 +62,7 @@ export function subscribe(
     element('last-turn').textContent = last
       ? `${last.side === snapshot.game.streamerColor ? 'Streamer' : 'Chat'}: ${last.reason === 'forced-pass' ? 'forced pass — no legal move for that roll' : `${last.option ? `option ${last.option} · ` : ''}${last.reason === 'single-choice' ? 'auto-played the sole retained choice · ' : ''}${last.moves.join(' · ')}`}`
       : '';
-    element('dice').textContent = diceText(snapshot.game.dice) || '—';
+    renderDice(element('dice'), snapshot.game.dice);
     element('side').textContent =
       snapshot.game.phase === 'idle'
         ? 'No game started'
@@ -101,6 +106,7 @@ export function subscribe(
       );
       renderBoard(miniature, choice.resultingDfen, {
         flipped: snapshot.game.streamerColor === 'b',
+        coordinates: false,
       });
       const presentation = snapshot.preview.choices.find(
         (item) => item.option === choice.option,

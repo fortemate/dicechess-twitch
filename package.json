@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.ts",
     "test:coverage": "npm run build && node -e \"require('node:fs').mkdirSync('coverage', { recursive: true })\" && node --test-concurrency=1 --experimental-test-coverage --test-coverage-include=\"src/**/*.ts\" --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=coverage/lcov.info --test tests/*.test.ts",
-    "test:browser": "playwright test",
+    "test:browser": "npm run build && playwright test",
     "bench:candidates": "node scripts/benchmark-candidates.ts",
     "check": "npm run format:check && npm run typecheck && npm test",
     "rehearse:fixtures": "npm run build && node tests/rehearsal/host.ts",
@@ -29,8 +29,10 @@
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
+    "@types/jsdom": "30.0.0",
     "@types/node": "24.19.2",
     "esbuild": "0.28.2",
+    "jsdom": "30.1.3",
     "prettier": "3.9.10",
     "typescript": "7.0.2"
   }

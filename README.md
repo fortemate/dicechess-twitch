@@ -148,5 +148,7 @@ restricted media assets are bundled.
 
 Project-authored code and documentation are licensed under
 [AGPL-3.0-only](LICENSE). Third-party components retain their licenses. The
-Fortemate name and logo are not licensed under the AGPL; asset permissions must
-be checked separately before reuse.
+cburnett chess piece SVGs retain their GPL-3.0-or-later license and author
+credit; see [third-party artwork notices](THIRD_PARTY_NOTICES.md). The Fortemate
+name and logo are not licensed under the AGPL; asset permissions must be checked
+separately before reuse.

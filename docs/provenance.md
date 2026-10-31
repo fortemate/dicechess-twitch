@@ -2,13 +2,21 @@
 
 All application HTML, CSS and TypeScript was authored for this repository during
 the hackathon window with Codex and is covered by the repository's AGPL-3.0-only
-license. The DC text tile and abstract checkerboard are CSS/text, not copied
-Fortemate brand artwork. Chess pieces are Unicode glyphs rendered by system
-fonts. No images, voices, music or TV assets are bundled.
+license. The DC text tile and checkerboard are CSS/text, not copied Fortemate
+brand artwork. Chess pieces are the unmodified **cburnett** SVG set by Colin M.
+L. Burnett, reused from the public web play client under GPL-3.0-or-later. The
+same twelve SVGs serve the main board, candidate miniatures and dice, without a
+Chessground runtime dependency. See [artwork notices](../THIRD_PARTY_NOTICES.md)
+for the source revision, editable SVGs, hashes and bundled license. No voices,
+music or TV assets are bundled.
 
 Direct npm dependencies are exact-version pinned; `package-lock.json` records
 transitive versions, registry locations and integrity hashes. Installed
 dependencies retain their own licenses.
+
+[jsdom 30.1.3](https://github.com/jsdom/jsdom) and its TypeScript definitions
+(`@types/jsdom` 30.0.0), both MIT, are dev-only dependencies for Node
+DOM/coverage tests. They are not bundled into the application.
 
 | Component         | Version | License       | Source / use                                                                                                                                                                                                                                                                                                                                     |
 | ----------------- | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

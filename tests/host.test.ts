@@ -3,6 +3,7 @@ import { request } from 'node:http';
 import { resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import { startHost } from '../src/host/server.ts';
+import { pieceAssetFiles } from '../src/shared/artwork.ts';
 import type {
   OperatorBootstrap,
   PublicSnapshot,
@@ -27,6 +28,39 @@ before(async () => {
 });
 after(async () => {
   await host?.close();
+});
+
+test('bundled artwork loads on both surfaces without opening arbitrary file access', async () => {
+  for (const url of [host.operatorUrl, host.obsUrl]) {
+    for (const file of pieceAssetFiles) {
+      const response = await fetch(`${url}/pieces/cburnett/${file}`);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('content-type'), 'image/svg+xml');
+      assert.match(
+        response.headers.get('content-security-policy')!,
+        /img-src 'self'/,
+      );
+      assert.match(await response.text(), /<svg/);
+    }
+    const notice = await fetch(`${url}/pieces/cburnett/NOTICE.txt`);
+    assert.equal(notice.status, 200);
+    assert.match(await notice.text(), /Colin M\. L\. Burnett/);
+    const license = await fetch(`${url}/pieces/cburnett/LICENSE.txt`);
+    assert.equal(license.status, 200);
+    assert.match(await license.text(), /Version 3, 29 June 2007/);
+    for (const path of [
+      'pieces/cburnett/unknown.svg',
+      'pieces/cburnett/%2e%2e%2fpackage.json',
+      'package.json',
+    ]) {
+      assert.equal((await fetch(`${url}/${path}`)).status, 404);
+    }
+  }
+  assert.equal(
+    (await fetch(`${host.obsUrl}/pieces/cburnett/wK.svg`, { method: 'POST' }))
+      .status,
+    405,
+  );
 });
 
 async function snapshot(url = host.operatorUrl) {
