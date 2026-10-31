@@ -14,6 +14,7 @@ export function displayBoard(snapshot: PublicSnapshot) {
       (snapshot.game.phase === 'paused' &&
         snapshot.game.resumePhase === 'preview'));
   return {
+    previewing: showing,
     dfen:
       showing && snapshot.preview.dfen
         ? snapshot.preview.dfen
@@ -87,10 +88,7 @@ export function subscribe(
     const cards = snapshot.game.choices.map((choice) => {
       const card = document.createElement('div');
       card.className = 'choice';
-      if (
-        snapshot.preview.option === choice.option &&
-        snapshot.game.phase === 'preview'
-      )
+      if (snapshot.preview.option === choice.option && display.previewing)
         card.classList.add('previewing');
       if (
         snapshot.voting.lastDecision?.roundId === snapshot.game.roundId &&

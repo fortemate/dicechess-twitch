@@ -51,6 +51,8 @@ test('neutral card labels follow host preview/decision state and transport healt
     const stream = streams[0]!;
     const preview = structuredClone(authoritative);
     preview.preview.option = preview.game.choices[0]!.option;
+    preview.preview.phase = 'showing';
+    preview.preview.dfen = preview.game.choices[0]!.resultingDfen;
     preview.game.phase = 'preview';
     stream.emit(preview);
     const doc = dom.window.document;
@@ -72,7 +74,43 @@ test('neutral card labels follow host preview/decision state and transport healt
     assert.equal(doc.getElementById('connection')!.dataset.connected, 'true');
     assert.equal(doc.querySelectorAll('.choice-state').length, 1);
 
-    const chosen = structuredClone(preview);
+    const paused = structuredClone(preview);
+    paused.revision++;
+    paused.game.phase = 'paused';
+    paused.game.resumePhase = 'preview';
+    stream.emit(paused);
+    assert.equal(
+      doc.querySelector('.previewing .choice-state')?.textContent,
+      'Preview',
+    );
+    assert.equal(doc.querySelectorAll('.previewing').length, 1);
+    assert.equal(
+      doc.getElementById('board')!.dataset.dfen,
+      preview.preview.dfen,
+    );
+
+    const unrelatedPause = structuredClone(paused);
+    unrelatedPause.revision++;
+    unrelatedPause.game.resumePhase = 'streamer-roll';
+    stream.emit(unrelatedPause);
+    assert.equal(doc.querySelectorAll('.previewing, .choice-state').length, 0);
+    assert.equal(doc.getElementById('board')!.dataset.dfen, preview.game.dfen);
+
+    const resumed = structuredClone(preview);
+    resumed.revision = unrelatedPause.revision + 1;
+    stream.emit(resumed);
+    assert.equal(
+      doc.querySelector('.previewing .choice-state')?.textContent,
+      'Preview',
+    );
+    const completed = structuredClone(resumed);
+    completed.revision++;
+    completed.preview.phase = 'complete';
+    stream.emit(completed);
+    assert.equal(doc.querySelectorAll('.previewing, .choice-state').length, 0);
+    assert.equal(doc.getElementById('board')!.dataset.dfen, preview.game.dfen);
+
+    const chosen = structuredClone(completed);
     chosen.revision++;
     chosen.game.phase = 'paused';
     chosen.voting.phase = 'resolved';
