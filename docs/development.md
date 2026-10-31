@@ -127,6 +127,11 @@ loopback ports, with in-memory or temporary test storage. It neither starts a
 second host on 4310/4311 nor opens the operator's saved game, so a local
 rehearsal can remain running while the suite checks the new build.
 
+Node tests use the dev-only jsdom dependency to exercise the board renderer's
+square input, keyboard focus, accessible piece names and orientation. These
+direct TypeScript imports contribute to LCOV; image decoding, CSP enforcement
+and layout are checked separately in Chromium.
+
 On supported Linux distributions, browser binaries alone are insufficient on a
 clean machine. Use `mise exec -- npx playwright install --with-deps chromium` to
 install Chromium and its required system libraries, matching CI. Installing

@@ -14,6 +14,10 @@ Direct npm dependencies are exact-version pinned; `package-lock.json` records
 transitive versions, registry locations and integrity hashes. Installed
 dependencies retain their own licenses.
 
+[jsdom 30.1.3](https://github.com/jsdom/jsdom) and its TypeScript definitions
+(`@types/jsdom` 30.0.0), both MIT, are dev-only dependencies for Node
+DOM/coverage tests. They are not bundled into the application.
+
 | Component         | Version | License       | Source / use                                                                                                                                                                                                                                                                                                                                     |
 | ----------------- | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Dice Chess Engine | 0.14.9  | AGPL-3.0-only | [Public engine](https://github.com/fortemate/dicechess-engine), [npm package](https://www.npmjs.com/package/@fortemate/dicechess-engine); existing pre-hackathon foundation, pinned and integrated for rules, complete-turn trees, public bot suggestions and equity estimates in workers. Application-specific candidate selection is new work. |
