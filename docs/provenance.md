@@ -2,10 +2,15 @@
 
 All application HTML, CSS and TypeScript was authored for this repository during
 the hackathon window with Codex and is covered by the repository's AGPL-3.0-only
-license. The DC text tile and checkerboard are CSS/text, not copied Fortemate
-brand artwork. Chess pieces are the unmodified **cburnett** SVG set by Colin M.
-L. Burnett, reused from the public web play client under GPL-3.0-or-later. The
-same twelve SVGs serve the main board, candidate miniatures and dice, without a
+license, except for the separately reserved Fortemate brand assets described
+below. The header uses the approved white **Six Cells Dense** export, copied
+without modification for this Fortemate-managed product. The mark and name are
+not licensed under the software AGPL; see the bundled
+[brand notice](../src/client/brand/NOTICE.txt). The wordmark is live system-font
+text, not a new permanent logo asset. No reusable external brand kit is
+included. Chess pieces are the unmodified **cburnett** SVG set by Colin M. L.
+Burnett, reused from the public web play client under GPL-3.0-or-later. The same
+twelve SVGs serve the main board, candidate miniatures and dice, without a
 Chessground runtime dependency. See [artwork notices](../THIRD_PARTY_NOTICES.md)
 for the source revision, editable SVGs, hashes and bundled license. No voices,
 music or TV assets are bundled.
@@ -36,7 +41,7 @@ are pinned to commit SHAs from
 Playwright downloads Chromium for tests; the browser is not bundled in
 application output.
 
-No source was extracted from Dice Chess TV or another private project. No
-private evaluators, weights, books, production profiles, restricted
+No software source was extracted from Dice Chess TV or another private project.
+No private evaluators, weights, books, production profiles, restricted
 voice/music/portrait assets or infrastructure configuration were copied. No
 claim about sponsor support for existing components is made here.

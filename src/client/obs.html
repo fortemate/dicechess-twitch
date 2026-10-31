@@ -10,8 +10,18 @@
   <body class="broadcast">
     <main>
       <header class="masthead">
-        <span class="brand-mark" aria-hidden="true">DC</span>
-        <div>
+        <div class="brand-lockup">
+          <img
+            class="brand-mark"
+            src="/brand/fortemate-mark-white.svg"
+            alt=""
+          />
+          <div>
+            <p class="brand-name">Fortemate</p>
+            <p class="brand-tagline">Where skill meets luck.</p>
+          </div>
+        </div>
+        <div class="product-heading">
           <p class="eyebrow">Streamer versus chat</p>
           <h1>Twitch Plays Dice Chess</h1>
         </div>
@@ -39,8 +49,8 @@
         </div>
       </section>
       <footer class="broadcast-footer">
-        <span
-          >Local host / read-only scene ·
+        <span>Fortemate · Dice Chess</span
+        ><span>
           <a
             class="artwork-credit"
             href="/pieces/cburnett/NOTICE.txt"
@@ -48,9 +58,12 @@
             rel="noreferrer"
             >Pieces: cburnett</a
           ></span
-        ><span>Revision <b id="revision">—</b></span
-        ><span>Session <span id="session">—</span></span>
+        ><span>Streamer versus chat</span>
       </footer>
+      <div hidden>
+        Revision <span id="revision">—</span> · Session
+        <span id="session">—</span>
+      </div>
       <p id="storage-status" class="storage-status" role="alert" hidden></p>
     </main>
   </body>

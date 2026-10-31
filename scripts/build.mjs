@@ -38,4 +38,5 @@ await Promise.all([
     copyFile(`src/client/${file}`, `dist/client/${file}`),
   ),
   cp('src/client/pieces', 'dist/client/pieces', { recursive: true }),
+  cp('src/client/brand', 'dist/client/brand', { recursive: true }),
 ]);

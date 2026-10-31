@@ -69,6 +69,8 @@ export async function startHost(options: HostOptions) {
       'operator.js',
       'obs.js',
       'styles.css',
+      'brand/fortemate-mark-white.svg',
+      'brand/NOTICE.txt',
       ...pieceAssetFiles.map((file) => `pieces/cburnett/${file}`),
       'pieces/cburnett/NOTICE.txt',
       'pieces/cburnett/LICENSE.txt',
@@ -195,7 +197,11 @@ export async function startHost(options: HostOptions) {
         return;
       }
       const name = path === '/' ? `${surface}.html` : path?.slice(1);
-      if (name?.startsWith('pieces/cburnett/') && assets.has(name)) {
+      if (
+        name &&
+        (name.startsWith('pieces/cburnett/') || name.startsWith('brand/')) &&
+        assets.has(name)
+      ) {
         response.writeHead(200, {
           ...securityHeaders,
           'Content-Type': name.endsWith('.svg')

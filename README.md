@@ -151,4 +151,5 @@ Project-authored code and documentation are licensed under
 cburnett chess piece SVGs retain their GPL-3.0-or-later license and author
 credit; see [third-party artwork notices](THIRD_PARTY_NOTICES.md). The Fortemate
 name and logo are not licensed under the AGPL; asset permissions must be checked
-separately before reuse.
+separately before reuse. See the bundled
+[Fortemate brand notice](src/client/brand/NOTICE.txt).

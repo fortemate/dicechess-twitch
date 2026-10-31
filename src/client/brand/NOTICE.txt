@@ -1,0 +1,17 @@
+Fortemate brand assets
+Copyright (c) 2026 Fortemate. All rights reserved.
+
+fortemate-mark-white.svg is the approved Six Cells Dense white export,
+reproduced without modification for this Fortemate-managed product.
+The mark has six equal cells in a 3-2-1 arrangement and a 4:1
+cell-to-gap ratio.
+
+The Fortemate name and logo are not covered by this repository's
+AGPL-3.0-only software license. Their inclusion does not grant third
+parties a license to reuse the brand. Fortemate-managed projects may
+use approved exports solely to identify or describe Fortemate and its
+corresponding products. No external brand kit is licensed here.
+
+Keep the mark unmodified, in one solid ink, with at least one cell's
+width of clear space. Do not distort, rotate, round, add effects to,
+or enclose the mark in a die, chess piece, shield or additional grid.

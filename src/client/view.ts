@@ -42,6 +42,7 @@ export function subscribe(
     // A reconnect can legitimately repeat the same revision. Restore connection
     // health even when there is no new state to render.
     element('connection').textContent = 'Live from local host';
+    element('connection').dataset.connected = 'true';
     onConnection?.(true);
     if (
       latest?.sessionId === snapshot.sessionId &&
@@ -56,6 +57,9 @@ export function subscribe(
       : 'Saving failed. Gameplay is paused. The operator must retry saving before play can continue.';
     element('twitch-status').textContent =
       `Twitch: ${snapshot.twitch.phase.replaceAll('-', ' ')}`;
+    element('twitch-status').dataset.connected = String(
+      snapshot.twitch.healthy,
+    );
     element('phase').textContent = snapshot.game.phase.replaceAll('-', ' ');
     element('announcement').textContent = snapshot.game.announcement;
     const last = snapshot.game.lastTurn;
@@ -131,6 +135,17 @@ export function subscribe(
           ? 'Automatic turn'
           : `!vote ${choice.option}`;
       card.append(title, miniature, moves, summary, command);
+      if (
+        card.classList.contains('chosen') ||
+        card.classList.contains('previewing')
+      ) {
+        const state = document.createElement('span');
+        state.className = 'choice-state';
+        state.textContent = card.classList.contains('chosen')
+          ? 'Chat choice'
+          : 'Preview';
+        card.append(state);
+      }
       return card;
     });
     element('choices').replaceChildren(...cards);
@@ -156,6 +171,7 @@ export function subscribe(
   events.onerror = () => {
     element('connection').textContent =
       'Host disconnected · waiting to reconnect';
+    element('connection').dataset.connected = 'false';
     onConnection?.(false);
   };
   window.addEventListener('pagehide', () => events.close(), { once: true });
