@@ -3,6 +3,7 @@ dist
 package-lock.json
 playwright-report
 test-results
+src/client/pieces/cburnett/*.svg
 # Preserve canonical shared blocks and inherited planning-document formatting.
 AGENTS.md
 docs/mvp.md

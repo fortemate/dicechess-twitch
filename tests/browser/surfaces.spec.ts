@@ -1,6 +1,20 @@
 import { test, expect } from '@playwright/test';
 import { createServer, request } from 'node:http';
 import type { ServerResponse } from 'node:http';
+import { resolve } from 'node:path';
+import { startHost } from '../../src/host/server.ts';
+
+let host: Awaited<ReturnType<typeof startHost>>;
+test.beforeEach(async () => {
+  host = await startHost({
+    operatorPort: 0,
+    obsPort: 0,
+    clientDirectory: resolve('dist/client'),
+  });
+});
+test.afterEach(async () => {
+  await host.close();
+});
 
 test('operator publication updates the read-only scene through the host', async ({
   browser,
@@ -12,8 +26,8 @@ test('operator publication updates the read-only scene through the host', async 
   const errors: string[] = [];
   operator.on('pageerror', (error) => errors.push(error.message));
   obs.on('pageerror', (error) => errors.push(error.message));
-  await operator.goto('http://127.0.0.1:4310');
-  await obs.goto('http://127.0.0.1:4311');
+  await operator.goto(host.operatorUrl);
+  await obs.goto(host.obsUrl);
   await expect(
     operator.getByRole('button', { name: 'Publish to scene' }),
   ).toBeEnabled();
@@ -37,16 +51,16 @@ test('operator publication updates the read-only scene through the host', async 
   await expect(obs.locator('input, select, form')).toHaveCount(0);
   // Real browser enforcement: an OBS document cannot read operator authority.
   expect(
-    await obs.evaluate(async () => {
+    await obs.evaluate(async (operatorUrl) => {
       try {
-        await fetch('http://127.0.0.1:4310/api/operator', {
+        await fetch(`${operatorUrl}/api/operator`, {
           headers: { 'X-Operator-Request': '1' },
         });
         return false;
       } catch {
         return true;
       }
-    }),
+    }, host.operatorUrl),
   ).toBe(true);
   await obs.reload();
   await expect(obs.locator('#message')).toHaveText('The chat takes a seat');
@@ -80,7 +94,7 @@ test('stream loss disables controls; reconnecting the same revision restores the
       return;
     }
     const upstream = request(
-      `http://127.0.0.1:4310${incoming.url}`,
+      `${host.operatorUrl}${incoming.url}`,
       {
         headers:
           incoming.headers['x-operator-request'] === '1'

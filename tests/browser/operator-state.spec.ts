@@ -100,7 +100,10 @@ test('operator buttons and board gestures survive chat-only updates', async ({
     );
     await gesture('c3');
     await expect.poll(() => session.checkpoint().game.moves).toEqual(['b1c3']);
-    await expect(page.locator('#board [data-square="c3"]')).toHaveText('♘');
+    await expect(page.locator('#board [data-square="c3"] img')).toHaveAttribute(
+      'src',
+      '/pieces/cburnett/wN.svg',
+    );
   } finally {
     clearInterval(traffic);
     await host.close();

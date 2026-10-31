@@ -1,17 +1,5 @@
-const symbols: Record<string, string> = {
-  K: '♔',
-  Q: '♕',
-  R: '♖',
-  B: '♗',
-  N: '♘',
-  P: '♙',
-  k: '♚',
-  q: '♛',
-  r: '♜',
-  b: '♝',
-  n: '♞',
-  p: '♟',
-};
+import { pieceImagePath } from '../shared/artwork.ts';
+
 const names: Record<string, string> = {
   k: 'king',
   q: 'queen',
@@ -21,6 +9,11 @@ const names: Record<string, string> = {
   p: 'pawn',
 };
 
+/**
+ * Render host-validated DFEN in the requested orientation, retaining square focus.
+ * A click callback enables operator input; omitting it produces a read-only board.
+ * Rendering never applies moves or changes the authoritative game state.
+ */
 export function renderBoard(
   container: HTMLElement,
   dfen: string,
@@ -31,6 +24,7 @@ export function renderBoard(
     actions?: readonly string[];
     disabled?: boolean;
     marks?: readonly string[];
+    coordinates?: boolean;
   } = {},
 ) {
   const placement = dfen.split(' ')[0]!;
@@ -59,7 +53,12 @@ export function renderBoard(
     cell.className = `square ${(row + file) % 2 ? 'dark' : 'light'}${options.selected === square ? ' selected' : ''}${target ? ' target' : ''}`;
     if (options.marks?.includes(square)) cell.classList.add('trace');
     cell.dataset.square = square;
-    cell.textContent = symbols[piece] ?? '';
+    const image = pieceImage(piece);
+    if (image) cell.append(image);
+    if (options.coordinates !== false) {
+      if (visible >= 56) cell.append(coordinate(square[0]!, 'file'));
+      if (visible % 8 === 0) cell.append(coordinate(square[1]!, 'rank'));
+    }
     cell.setAttribute(
       'aria-label',
       `${square}${piece === '.' ? ' empty' : ` ${piece === piece.toUpperCase() ? 'white' : 'black'} ${names[piece.toLowerCase()]}`}`,
@@ -78,6 +77,40 @@ export function renderBoard(
       ?.focus({ preventScroll: true });
 }
 
-export function diceText(dice: string): string {
-  return [...dice].map((piece) => symbols[piece] ?? piece).join(' ');
+/** Build decorative SVG artwork; its enclosing square or dice chip owns the label. */
+function pieceImage(piece: string): HTMLImageElement | undefined {
+  const path = pieceImagePath(piece);
+  if (!path) return undefined;
+  const image = document.createElement('img');
+  image.className = 'piece-image';
+  image.src = path;
+  image.alt = '';
+  image.draggable = false;
+  image.setAttribute('aria-hidden', 'true');
+  return image;
+}
+
+/** Add a visual coordinate without repeating the accessible square name. */
+function coordinate(text: string, kind: 'file' | 'rank'): HTMLElement {
+  const label = document.createElement('span');
+  label.className = `coordinate coordinate-${kind}`;
+  label.textContent = text;
+  label.setAttribute('aria-hidden', 'true');
+  return label;
+}
+
+/** Render supplied roll codes as labeled chips, or a dash when no valid code remains. */
+export function renderDice(container: HTMLElement, dice: string) {
+  const icons = [...dice].flatMap((piece) => {
+    const image = pieceImage(piece);
+    if (!image) return [];
+    const chip = document.createElement('span');
+    chip.className = 'piece-die';
+    chip.setAttribute('role', 'img');
+    chip.setAttribute('aria-label', names[piece.toLowerCase()]!);
+    chip.append(image);
+    return [chip];
+  });
+  container.replaceChildren(...icons);
+  if (!icons.length) container.textContent = '—';
 }

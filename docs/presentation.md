@@ -48,8 +48,16 @@ listener and never appear in the OBS DOM or routes.
 
 The scene targets 1920×1080 with three visible cards; the layout is also checked
 at 1280×720. Shorter-view adjustments keep status/connection/footer inside the
-viewport. Long promotion summaries have their own layout fixture. Chess glyphs
-come from system fonts, as described in [provenance](provenance.md).
+viewport. Long promotion summaries have their own layout fixture.
+
+Main boards, candidate miniatures and dice use the same bundled cburnett SVG
+artwork as the public web play client. Squares use its plain brown palette
+(`#f0d9b5` / `#b58863`), with file/rank coordinates on the main board that
+follow the streamer's orientation. Miniatures omit coordinates to keep small
+choices legible. The accessible square names and operator keyboard focus are
+retained; piece images do not intercept board input. Artwork is served locally
+on both listeners, including its attribution/license notice. See
+[provenance](provenance.md) for reuse terms.
 
 ## Evidence and remaining validation
 
