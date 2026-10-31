@@ -50,6 +50,12 @@ async function close(server: Server) {
     await new Promise<void>((resolve) => server.close(() => resolve()));
 }
 
+/**
+ * Start loopback operator and read-only OBS listeners for one authoritative session.
+ * Only allowlisted assets/public snapshots reach OBS; operator commands require
+ * the local capability, exact origin and current session revision. Closing the
+ * returned host stops both listeners and disposes the session.
+ */
 export async function startHost(options: HostOptions) {
   const session = options.session ?? new Session();
   // Fresh process-local authority; never placed in URLs, OBS assets or logs.

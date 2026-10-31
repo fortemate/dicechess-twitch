@@ -3,6 +3,10 @@ export const pieceAssetFiles = ['K', 'Q', 'R', 'B', 'N', 'P'].flatMap((piece) =>
   ['w', 'b'].map((color) => `${color}${piece}.svg`),
 );
 
+/**
+ * Map one canonical piece code to bundled artwork: uppercase white, lowercase black.
+ * Invalid codes have no path, so callers cannot introduce arbitrary image URLs.
+ */
 export function pieceImagePath(piece: string): string | undefined {
   if (!/^[kqrbnp]$/i.test(piece)) return undefined;
   const color = piece === piece.toUpperCase() ? 'w' : 'b';

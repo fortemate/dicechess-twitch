@@ -9,6 +9,11 @@ const names: Record<string, string> = {
   p: 'pawn',
 };
 
+/**
+ * Render host-validated DFEN in the requested orientation, retaining square focus.
+ * A click callback enables operator input; omitting it produces a read-only board.
+ * Rendering never applies moves or changes the authoritative game state.
+ */
 export function renderBoard(
   container: HTMLElement,
   dfen: string,
@@ -72,6 +77,7 @@ export function renderBoard(
       ?.focus({ preventScroll: true });
 }
 
+/** Build decorative SVG artwork; its enclosing square or dice chip owns the label. */
 function pieceImage(piece: string): HTMLImageElement | undefined {
   const path = pieceImagePath(piece);
   if (!path) return undefined;
@@ -84,6 +90,7 @@ function pieceImage(piece: string): HTMLImageElement | undefined {
   return image;
 }
 
+/** Add a visual coordinate without repeating the accessible square name. */
 function coordinate(text: string, kind: 'file' | 'rank'): HTMLElement {
   const label = document.createElement('span');
   label.className = `coordinate coordinate-${kind}`;
@@ -92,6 +99,7 @@ function coordinate(text: string, kind: 'file' | 'rank'): HTMLElement {
   return label;
 }
 
+/** Render supplied roll codes as labeled chips, or a dash when no valid code remains. */
 export function renderDice(container: HTMLElement, dice: string) {
   const icons = [...dice].flatMap((piece) => {
     const image = pieceImage(piece);

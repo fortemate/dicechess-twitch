@@ -26,6 +26,11 @@ export function displayBoard(snapshot: PublicSnapshot) {
   };
 }
 
+/**
+ * Render monotonically ordered public snapshots from the host's event stream.
+ * Repeated revisions still restore transport health; callbacks let the operator
+ * synchronize its controls without giving the read-only scene command authority.
+ */
 export function subscribe(
   onSnapshot?: (snapshot: PublicSnapshot) => void,
   onConnection?: (connected: boolean) => void,
