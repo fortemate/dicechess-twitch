@@ -70,18 +70,22 @@ test('board input completes a real engine turn and freezes chat choices on both 
       '/pieces/cburnett/wN.svg',
     );
     await expect(obs.locator('.mini-board img').first()).toBeVisible();
-    expect(
-      await obs
-        .locator('.piece-image')
-        .evaluateAll((images) =>
-          images.every(
-            (image) =>
-              image instanceof HTMLImageElement &&
-              image.complete &&
-              image.naturalWidth > 0,
-          ),
-        ),
-    ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          obs
+            .locator('.piece-image')
+            .evaluateAll((images) =>
+              images.every(
+                (image) =>
+                  image instanceof HTMLImageElement &&
+                  image.complete &&
+                  image.naturalWidth > 0,
+              ),
+            ),
+        { timeout: 5000, message: 'All piece SVGs finish loading' },
+      )
+      .toBe(true);
     await expect(obs.getByRole('button')).toHaveCount(0);
     const state = await (await fetch(`${host.obsUrl}/api/snapshot`)).json();
     expect(state.game.dfen).toBe(state.game.rolledDfen);

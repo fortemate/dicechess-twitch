@@ -170,9 +170,10 @@ revision change. Game checks click a complete turn through the board, prepare
 real-engine chat choices, and verify promotion/castling UI, pause/resume,
 uniform square geometry and hidden unavailable controls. Their dice and special
 starting positions are explicit test fixtures, not live Twitch evidence. They
-save local screenshots to `test-results/` (gitignored). Both default ports must
-be free. CI runs the same checks on Ubuntu with the pinned runtime and installs
-Chromium's Linux dependencies.
+save local screenshots to `test-results/` (gitignored). Browser checks use
+random loopback ports, so they do not require ports 4310/4311 to be free. CI
+runs the same checks on Ubuntu with the pinned runtime and installs Chromium's
+Linux dependencies.
 
 ## Earlier scaffold baseline
 
@@ -186,7 +187,8 @@ verification is claimed by this scaffold evidence.
 
 That scaffold evidence predates durable recovery. Current storage/restart and
 process-level evidence is recorded in [recovery](recovery.md). Browser checks
-use a unique isolated checkpoint and never open the default operator game file.
+use in-memory or temporary test storage and never open the default operator game
+file.
 
 The candidate follow-up explicitly rechecks the npm child-process runtime.
 Earlier macOS npm child scripts could select another Node already on PATH; the
@@ -195,7 +197,8 @@ project mise setting and build guard prevent that from silently recurring.
 ## Local authority and private configuration
 
 Both servers bind only `127.0.0.1`; use the documented numeric addresses, not
-`localhost`. OBS serves only its HTML/JS/CSS, `GET /api/snapshot` and
+`localhost`. OBS serves only its HTML/JS/CSS, allowlisted piece SVGs, the
+bundled artwork `NOTICE.txt` and `LICENSE.txt`, `GET /api/snapshot` and
 `GET /api/events`. It rejects mutations at the HTTP boundary. The operator page
 obtains a process-local capability with a same-origin custom-header request.
 Commands also require the exact operator origin and current
