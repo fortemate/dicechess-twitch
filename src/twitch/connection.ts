@@ -1,6 +1,10 @@
 import { TwitchAuth } from './auth.ts';
 import { EventSubClient } from './eventsub.ts';
-import type { SocketFactory, TransportHealth } from './eventsub.ts';
+import type {
+  SocketFactory,
+  TransportHealth,
+  TransportFailure,
+} from './eventsub.ts';
 import type {
   ChatMessage,
   TwitchPublicState,
@@ -13,6 +17,7 @@ interface Options {
   interrupted: () => void;
   restored: () => void;
   onChat: (event: ChatMessage) => void;
+  diagnostic?: (reason: TransportFailure) => void;
   fetcher?: typeof fetch;
   socket?: SocketFactory;
 }
@@ -37,6 +42,7 @@ export class TwitchConnection {
           subscribe: (sessionId, signal) =>
             this.#auth.subscribeChat(sessionId, signal),
           ...(options.socket ? { socket: options.socket } : {}),
+          ...(options.diagnostic ? { diagnostic: options.diagnostic } : {}),
           onChat: (event) => {
             this.#received++;
             this.#options.onChat(event);

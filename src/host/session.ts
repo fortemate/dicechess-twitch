@@ -4,7 +4,7 @@ import type { OperatorGameState } from '../shared/game.ts';
 import { Game } from './game.ts';
 import type { GameOptions } from './game.ts';
 import { TwitchConnection } from '../twitch/connection.ts';
-import type { SocketFactory } from '../twitch/eventsub.ts';
+import type { SocketFactory, TransportFailure } from '../twitch/eventsub.ts';
 import type { ChatMessage } from '../twitch/types.ts';
 import { Preview } from '../presentation/preview.ts';
 import { VotingCoordinator } from '../voting/coordinator.ts';
@@ -16,6 +16,7 @@ interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
   twitchClientId?: string;
   twitchFetch?: typeof fetch;
   twitchSocket?: SocketFactory;
+  twitchDiagnostic?: (reason: TransportFailure) => void;
   voteDurationMs?: number;
   previewStepMs?: number;
   store?: CheckpointStore;
@@ -50,6 +51,7 @@ export class Session {
       twitchClientId,
       twitchFetch,
       twitchSocket,
+      twitchDiagnostic,
       voteDurationMs,
       previewStepMs,
       store,
@@ -74,6 +76,7 @@ export class Session {
       ...(twitchClientId ? { clientId: twitchClientId } : {}),
       ...(twitchFetch ? { fetcher: twitchFetch } : {}),
       ...(twitchSocket ? { socket: twitchSocket } : {}),
+      ...(twitchDiagnostic ? { diagnostic: twitchDiagnostic } : {}),
       changed: () => this.#changed(),
       interrupted: () => this.game.chatInterrupted(),
       restored: () => this.game.chatRestored(),
