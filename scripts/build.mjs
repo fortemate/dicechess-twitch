@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { mkdir, copyFile, rm, readFile } from 'node:fs/promises';
+import { mkdir, copyFile, cp, rm, readFile } from 'node:fs/promises';
 
 const { engines } = JSON.parse(
   await readFile(new URL('../package.json', import.meta.url), 'utf8'),
@@ -37,4 +37,5 @@ await Promise.all([
   ...['operator.html', 'obs.html', 'styles.css'].map((file) =>
     copyFile(`src/client/${file}`, `dist/client/${file}`),
   ),
+  cp('src/client/pieces', 'dist/client/pieces', { recursive: true }),
 ]);

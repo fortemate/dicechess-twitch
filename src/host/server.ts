@@ -5,6 +5,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { isOperatorCommand } from '../shared/protocol.ts';
 import { Session } from './session.ts';
+import { pieceAssetFiles } from '../shared/artwork.ts';
 
 interface HostOptions {
   operatorPort: number;
@@ -19,7 +20,7 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'Content-Security-Policy':
-    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
 };
 
 function json(response: ServerResponse, status: number, value: unknown) {
@@ -62,6 +63,9 @@ export async function startHost(options: HostOptions) {
       'operator.js',
       'obs.js',
       'styles.css',
+      ...pieceAssetFiles.map((file) => `pieces/cburnett/${file}`),
+      'pieces/cburnett/NOTICE.txt',
+      'pieces/cburnett/LICENSE.txt',
     ]) {
       assets.set(name, await readFile(join(options.clientDirectory, name)));
     }
@@ -185,6 +189,16 @@ export async function startHost(options: HostOptions) {
         return;
       }
       const name = path === '/' ? `${surface}.html` : path?.slice(1);
+      if (name?.startsWith('pieces/cburnett/') && assets.has(name)) {
+        response.writeHead(200, {
+          ...securityHeaders,
+          'Content-Type': name.endsWith('.svg')
+            ? 'image/svg+xml'
+            : 'text/plain; charset=utf-8',
+        });
+        response.end(assets.get(name));
+        return;
+      }
       if (
         name &&
         [`${surface}.html`, `${surface}.js`, 'styles.css'].includes(name)

@@ -61,8 +61,27 @@ test('board input completes a real engine turn and freezes chat choices on both 
       operator.getByRole('button', { name: 'Resume game', exact: true }),
     ).toBeVisible();
     await expect(obs.locator('#choices .choice').first()).toBeVisible();
-    await expect(obs.locator('#board [data-square="e2"]')).toHaveText('♕');
-    await expect(obs.locator('#board [data-square="c3"]')).toHaveText('♘');
+    await expect(obs.locator('#board [data-square="e2"] img')).toHaveAttribute(
+      'src',
+      '/pieces/cburnett/wQ.svg',
+    );
+    await expect(obs.locator('#board [data-square="c3"] img')).toHaveAttribute(
+      'src',
+      '/pieces/cburnett/wN.svg',
+    );
+    await expect(obs.locator('.mini-board img').first()).toBeVisible();
+    expect(
+      await obs
+        .locator('.piece-image')
+        .evaluateAll((images) =>
+          images.every(
+            (image) =>
+              image instanceof HTMLImageElement &&
+              image.complete &&
+              image.naturalWidth > 0,
+          ),
+        ),
+    ).toBe(true);
     await expect(obs.getByRole('button')).toHaveCount(0);
     const state = await (await fetch(`${host.obsUrl}/api/snapshot`)).json();
     expect(state.game.dfen).toBe(state.game.rolledDfen);

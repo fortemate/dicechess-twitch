@@ -122,6 +122,11 @@ npm run test:coverage
 git diff --check
 ```
 
+`test:browser` builds first. Each browser test starts an isolated host on random
+loopback ports, with in-memory or temporary test storage. It neither starts a
+second host on 4310/4311 nor opens the operator's saved game, so a local
+rehearsal can remain running while the suite checks the new build.
+
 On supported Linux distributions, browser binaries alone are insufficient on a
 clean machine. Use `mise exec -- npx playwright install --with-deps chromium` to
 install Chromium and its required system libraries, matching CI. Installing
