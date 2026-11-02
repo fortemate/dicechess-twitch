@@ -19,6 +19,7 @@ test('presentation shows actual engine-approved promotion, en passant, castling 
     [fixtures.promotion, 'a7a8n', 'promotes to knight', null, 'knight'],
     [fixtures.enPassant, 'e5d6', 'captures pawn', 'pawn', null],
     [fixtures.castling, 'e1g1', 'Castle kingside', null, null],
+    [fixtures.castling, 'e1c1', 'Castle queenside', null, null],
     [fixtures.tactical, 'e7e8', 'captures king', 'king', null],
   ] as const) {
     const selected = choice(root, move);
@@ -32,6 +33,41 @@ test('presentation shows actual engine-approved promotion, en passant, castling 
     assert.ok(!JSON.stringify(result).includes('utility'));
   }
 });
+test('capture-promotion keeps the move label, summary and preview frames in agreement', () => {
+  const root = 'r3k3/1P6/8/8/8/8/8/4K3 w - - 0 1 P';
+  const selected = choice(root, 'b7a8q');
+  const result = presentChoices(root, [selected]);
+  const presentation = result.choices[0]!;
+  assert.deepEqual(presentation.moves, [
+    {
+      uci: 'b7a8q',
+      label: 'pawn b7×a8 · captures rook · promotes to queen',
+      captured: 'rook',
+      promotion: 'queen',
+    },
+  ]);
+  assert.equal(presentation.summary, 'Captures rook · Promotion: queen');
+  assert.deepEqual(
+    result.frames.map(({ option, step, totalSteps, from, to }) => ({
+      option,
+      step,
+      totalSteps,
+      from,
+      to,
+    })),
+    [
+      { option: 1, step: 0, totalSteps: 1, from: null, to: null },
+      { option: 1, step: 1, totalSteps: 1, from: 'b7', to: 'a8' },
+      { option: 1, step: 1, totalSteps: 1, from: null, to: null },
+    ],
+  );
+  assert.equal(result.frames.at(-1)!.dfen, selected.resultingDfen);
+  assert.equal(
+    result.frames.at(-1)!.caption,
+    'Preview only · Option 1 · Final position · Captures rook · Promotion: queen',
+  );
+});
+
 test('preview validates its final result and starts every alternative at the true root', () => {
   const root = fixtures.opening;
   const choices = enumerateTurns(root, 25000)

@@ -9,7 +9,7 @@ interface Options {
   stepMs?: number;
 }
 export class Preview {
-  #options: Options;
+  readonly #options: Options;
   #state: PublicPreview = {
     phase: 'idle',
     roundId: null,
