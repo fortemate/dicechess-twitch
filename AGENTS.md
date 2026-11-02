@@ -7,8 +7,10 @@ the streamer chooses their own legal moves freely.
 ## Current scope and sources
 
 - This repository contains local streamer play, engine candidate preparation and fixture-tested
-  Twitch OAuth/EventSub plus host-owned vote collection/timers. Real broadcaster/channel
-  verification remains separate work. Durable checkpoint/recovery code is implemented in
+  Twitch OAuth/EventSub plus host-owned vote collection/timers. Focused real broadcaster
+  authorization, single-account voting and OBS/Twitch playback were verified November 2, 2026;
+  see README.md and `docs/measurements/judging-2026-11-02.json`. Independent-viewer and
+  broader real-service failure-recovery verification remain separate work. Durable checkpoint/recovery code is implemented in
   `docs/recovery.md`; never persist OAuth/activation material, raw chat or voter maps. Host-owned animated previews and
   final-position miniatures are implemented; see `docs/presentation.md`. Keep verified startup/checks in
   `docs/development.md`, game behavior in `docs/game-state.md` and voting policy in
@@ -22,12 +24,15 @@ the streamer chooses their own legal moves freely.
 - Candidate order freezes before preview. Deduplicate resulting rule states, not just move strings.
 - Do not add five-choice mode, monetization, tournaments, voice packs or multi-channel hosting
   during the MVP deadline without an explicit scope decision.
-- Real channel/human broadcast evidence remains unfinished. Use `docs/broadcast-rehearsal.md`
-  and its unfilled report template. Rare-case fixed-dice sessions live under `tests/rehearsal/`,
+- Broader independent-viewer broadcast and live failure-recovery evidence remains unfinished.
+  Use `docs/broadcast-rehearsal.md` and its unfilled report template; do not erase the
+  focused single-account live evidence when documenting those remaining checks. Rare-case fixed-dice sessions live under `tests/rehearsal/`,
   must stay visibly non-production and never authorize Twitch or load the operator checkpoint.
-- `docs/judging/` contains prepared English drafts and the verified primary Codex session ID.
-  The demo footage, real-human game, judge access and submitted state remain unverified; never
-  turn a prepared script, fixture or local screenshot into a live/publication claim.
+- `docs/judging/` contains the recorded English demo, public install/test guide and verified
+  primary Codex session ID. The owner submitted the Devpost entry on November 2, 2026;
+  README.md and `docs/submission.md` record that evidence. Re-read Devpost for current
+  submission status. Independent multi-viewer play is unverified; never turn a fixture
+  or local screenshot into a live-audience claim.
 - Creating issues does not authorize Jules dispatch or external messaging.
 
 ## Application validation

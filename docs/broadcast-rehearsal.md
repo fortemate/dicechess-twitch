@@ -2,19 +2,21 @@
 
 Issue:
 [fortemate/dicechess-twitch#9](https://github.com/fortemate/dicechess-twitch/issues/9).
-**Preparation only. No real broadcaster consent, human-viewer game or OBS/Twitch
-broadcast has been recorded by this work.** Local automated checks and the
-process restart report are separate evidence.
+A [focused live rehearsal](../README.md#focused-live-tests--november-2-2026)
+verified broadcaster consent, single-account votes, complete-turn execution and
+OBS output in Twitch playback. The [recorded demo](judging/demo.en.md) and
+[judging package](judging/README.md) are available. **The broader
+independent-viewer game, delay measurements and real-service failure tests below
+remain pending.** Local automated checks and the process restart report are
+separate evidence.
 
 ## Start with a reviewed build
 
 Record the exact commit, date/time/timezone, machine/OS and Node/npm versions in
-[the report template](rehearsal-report-template.md). Review the open PR stack
-before choosing a tested revision. Until the integration PR is merged, use its
-head branch; afterwards use `main`. The integrated application includes the
-operator and multiple-en-passant checkpoint fixes and the complete-game fixture
-runner. The owner chooses the final rehearsal revision after reviewing the
-stack.
+[the report template](rehearsal-report-template.md). The demonstrated
+application revision and public setup are recorded in
+[the judge run guide](judging/run.md). Use that tested revision to reproduce the
+demo; choose and identify a reviewed revision for any later rehearsal.
 
 Follow [development](development.md): pinned runtime, `npm ci`, `npm run check`,
 Chromium installation and `npm run test:browser`. A clean checkout needs the
@@ -164,5 +166,5 @@ not evidence that Issue #9's real-human Definition of Done is complete.
 Fill each report row with observed evidence or **not run**, never a default
 pass. Link actual blocking defects to deduplicated GitHub issues and retest
 fixes on an identified revision. Keep Issue #9 open until the live Definition of
-Done is met. The judging package stays unfinished until the owner has reviewed
-the real footage, access and limitations.
+Done is met. The submitted judging package records the focused evidence and its
+limitations; it does not mark this broader rehearsal complete.

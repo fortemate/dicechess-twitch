@@ -11,7 +11,10 @@ choice and restores the original board before polling without changing game
 state.
 
 The [OAuth/EventSub connection](twitch-connection.md) supplies host-only events
-and sanitized health, with real-channel verification still pending.
+and sanitized health. Real broadcaster authorization and single-account voting
+were verified in the
+[focused live rehearsal](../README.md#focused-live-tests--november-2-2026);
+independent-viewer and broader live failure-recovery checks remain pending.
 
 ## State and ownership
 
@@ -90,12 +93,14 @@ click any legal continuation; it cannot replace a future chat-vote result.
 The internal `openVoting`/`resolveChoice` hooks are deliberately not operator
 HTTP commands. Their behavior is tested with local orchestration fixtures.
 Without a healthy Twitch connection, multiple choices remain at preview.
-Normalized fixture chat verifies end-to-end voting/execution; real broadcaster
-chat is still unverified. [Durable recovery](recovery.md) restores committed
-game state paused, rebuilds the original maximal tree for a partial streamer
-turn and validates retained choices/animation prefixes before continuation. The
-saved current-game history records each completed turn once. A fresh process
-session requires operator reload; interrupted polls reopen under a new round.
+Normalized fixture chat verifies end-to-end voting/execution. The focused live
+rehearsal separately verified real chat votes and complete-turn execution;
+fixtures remain the evidence for duplicate delivery and recovery edge cases.
+[Durable recovery](recovery.md) restores committed game state paused, rebuilds
+the original maximal tree for a partial streamer turn and validates retained
+choices/animation prefixes before continuation. The saved current-game history
+records each completed turn once. A fresh process session requires operator
+reload; interrupted polls reopen under a new round.
 
 ## Verification
 
