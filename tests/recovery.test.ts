@@ -5,6 +5,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -46,6 +47,29 @@ test('checkpoint validation rejects unknown fields, impossible prefixes and unsu
         message: 'Saved session is invalid or unsupported',
       });
     assert.deepEqual(parseCheckpoint(original), original);
+  } finally {
+    session.dispose();
+  }
+});
+
+test('checkpoint phases reject non-string values instead of coercing arrays into phase names', () => {
+  const session = new Session();
+  try {
+    session.game.start('w');
+    const active = session.checkpoint();
+    session.game.pause();
+    const paused = session.checkpoint();
+    assert.deepEqual(parseCheckpoint(active), active);
+    assert.deepEqual(parseCheckpoint(paused), paused);
+    for (const invalid of [
+      { ...active, game: { ...active.game, phase: ['streamer-roll'] } },
+      { ...active, game: { ...active.game, phase: {} } },
+      { ...paused, game: { ...paused.game, resumePhase: ['streamer-roll'] } },
+      { ...paused, game: { ...paused.game, resumePhase: {} } },
+    ])
+      assert.throws(() => parseCheckpoint(invalid), {
+        message: 'Saved session is invalid or unsupported',
+      });
   } finally {
     session.dispose();
   }
@@ -224,6 +248,56 @@ test('file checkpoints replace atomically, retain private permissions and reject
   } finally {
     session.dispose();
     store.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('malformed, live and symlinked lock owners are refused without altering their contents', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dicechess-lock-owners-'));
+  try {
+    for (const [index, contents] of [
+      'not-json',
+      '{}',
+      JSON.stringify({ pid: '2147483647' }),
+      JSON.stringify({ pid: 0 }),
+      JSON.stringify({ pid: -1 }),
+      JSON.stringify({ pid: process.pid }),
+      'x'.repeat(1025),
+    ].entries()) {
+      const file = join(directory, `session-${index}.json`);
+      writeFileSync(`${file}.lock`, contents);
+      assert.throws(() => new FileStore(file), /already in use/);
+      assert.equal(readFileSync(`${file}.lock`, 'utf8'), contents);
+    }
+    const target = join(directory, 'owner.json');
+    const contents = JSON.stringify({ pid: 2147483647 });
+    writeFileSync(target, contents);
+    const file = join(directory, 'linked.json');
+    symlinkSync(target, `${file}.lock`);
+    assert.throws(() => new FileStore(file), /already in use/);
+    assert.equal(readFileSync(`${file}.lock`, 'utf8'), contents);
+    assert.equal(readFileSync(target, 'utf8'), contents);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('a denied owner-process probe never clears a session lock', (context) => {
+  const directory = mkdtempSync(join(tmpdir(), 'dicechess-lock-permission-'));
+  const file = join(directory, 'session.json');
+  const contents = JSON.stringify({ pid: 2147483647 });
+  writeFileSync(`${file}.lock`, contents);
+  const probe = context.mock.method(process, 'kill', () => {
+    throw Object.assign(new Error('Fixture process permission denied'), {
+      code: 'EPERM',
+    });
+  });
+  try {
+    assert.throws(() => new FileStore(file), /already in use/);
+    assert.equal(readFileSync(`${file}.lock`, 'utf8'), contents);
+    assert.equal(probe.mock.callCount(), 1);
+    assert.deepEqual(probe.mock.calls[0]!.arguments, [2147483647, 0]);
+  } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 });
