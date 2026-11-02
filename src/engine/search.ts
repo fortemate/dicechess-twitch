@@ -40,6 +40,23 @@ export function applyUci(dfen: string, uci: string): string {
   return next;
 }
 
+function completeTurn(
+  state: string,
+  moves: string[],
+  enemyKing: string,
+): LegalTurn {
+  const terminalWin = !state.split(' ')[0]!.includes(enemyKing);
+  // A king capture terminates immediately, even with dice left.
+  const resultingDfen = terminalWin ? state : DiceChess.endTurn(state);
+  if (!resultingDfen) throw new Error('Engine rejected endTurn');
+  return {
+    moves,
+    resultingDfen,
+    ruleKey: ruleStateKey(resultingDfen),
+    terminalWin,
+  };
+}
+
 /** Only walk the frozen root tree. Never regenerate legality after a micro-move. */
 export function enumerateTurns(
   rolledDfen: string,
@@ -74,18 +91,8 @@ export function enumerateTurns(
       if (Object.keys(child).length > 0) walk(child, next, sequence);
       else {
         paths++;
-        const terminalWin = !next.split(' ')[0]!.includes(enemyKing);
-        // A king capture terminates immediately, even with dice left.
-        const resultingDfen = terminalWin ? next : DiceChess.endTurn(next);
-        if (!resultingDfen) throw new Error('Engine rejected endTurn');
-        const ruleKey = ruleStateKey(resultingDfen);
-        if (!unique.has(ruleKey))
-          unique.set(ruleKey, {
-            moves: sequence,
-            resultingDfen,
-            ruleKey,
-            terminalWin,
-          });
+        const turn = completeTurn(next, sequence, enemyKing);
+        if (!unique.has(turn.ruleKey)) unique.set(turn.ruleKey, turn);
       }
       if (limited) return;
     }
@@ -129,6 +136,30 @@ function sampleTurns(
     used.add(next.ruleKey);
   }
   return selected;
+}
+
+function scoreTurn(
+  turn: LegalTurn,
+  perspective: string | undefined,
+  seed: number,
+  policy: CandidatePolicy,
+): ScoredTurn {
+  let utility = 1;
+  if (!turn.terminalWin) {
+    const equity = DiceChess.estimateEquity(turn.resultingDfen, {
+      rollouts: policy.rolloutCount,
+      maxPlies: policy.rolloutPlies,
+      seed,
+    });
+    if (equity.rollouts !== policy.rolloutCount)
+      throw new Error('Engine returned an invalid equity estimate');
+    utility =
+      (perspective === 'w' ? equity.whiteWin : equity.blackWin) +
+      equity.undecided / 2;
+  }
+  if (!Number.isFinite(utility) || utility < 0 || utility > 1)
+    throw new Error('Invalid candidate utility');
+  return { ...turn, utility };
 }
 
 export function searchCandidates(
@@ -183,28 +214,12 @@ export function searchCandidates(
   const perspective = request.rolledDfen.split(' ')[1];
   for (const turn of samples) {
     if (expired()) break;
-    let utility = 1;
-    if (!turn.terminalWin) {
-      const equity = DiceChess.estimateEquity(turn.resultingDfen, {
-        rollouts: policy.rolloutCount,
-        maxPlies: policy.rolloutPlies,
-        seed: request.seed,
-      });
-      if (equity.rollouts !== policy.rolloutCount)
-        throw new Error('Engine returned an invalid equity estimate');
-      utility =
-        (perspective === 'w' ? equity.whiteWin : equity.blackWin) +
-        equity.undecided / 2;
-    }
-    if (!Number.isFinite(utility) || utility < 0 || utility > 1)
-      throw new Error('Invalid candidate utility');
-    scored.push({ ...turn, utility });
+    scored.push(scoreTurn(turn, perspective, request.seed, policy));
     emit('progress', 'ready', 'sampled');
   }
-  const reason = expired()
-    ? 'deadline'
-    : legal.limited || scored.length < legal.turns.length
-      ? 'sampled'
-      : 'complete';
+  let reason: WorkerProgress['reason'] = 'complete';
+  if (expired()) reason = 'deadline';
+  else if (legal.limited || scored.length < legal.turns.length)
+    reason = 'sampled';
   emit('done', scored.length ? 'ready' : 'unavailable', reason);
 }
