@@ -32,6 +32,8 @@ test('operator publication updates the read-only scene through the host', async 
     operator.getByRole('button', { name: 'Publish to scene' }),
   ).toBeEnabled();
   await expect(obs.locator('#connection')).toHaveText('Live from local host');
+  await expect(operator.getByRole('status')).toHaveCount(4);
+  await expect(obs.getByRole('status')).toHaveCount(3);
   await expect(obs.locator('#session')).toHaveText(
     await operator.locator('#session').innerText(),
   );
@@ -39,6 +41,7 @@ test('operator publication updates the read-only scene through the host', async 
   await operator.getByLabel('On-air message').fill('The chat takes a seat');
   await operator.getByRole('button', { name: 'Publish to scene' }).click();
   await expect(operator.locator('#feedback')).toHaveText('Published by host');
+  await expect(operator.locator('#feedback')).toHaveRole('status');
   await expect(obs.locator('#message')).toHaveText('The chat takes a seat');
   await expect(obs.locator('#phase')).toHaveText('idle');
   await expect(obs.locator('#revision')).toHaveText(
@@ -78,6 +81,50 @@ test('operator publication updates the read-only scene through the host', async 
   expect(errors).toEqual([]);
   await operator.close();
   await obs.close();
+});
+
+test('hidden host controls stay hidden across responsive layouts and pause transitions', async ({
+  browser,
+}) => {
+  const operator = await browser.newPage();
+  const obs = await browser.newPage();
+  try {
+    await operator.goto(host.operatorUrl);
+    await obs.goto(host.obsUrl);
+    await expect(operator.locator('#start')).toBeEnabled();
+    await expect(obs.locator('#connection')).toHaveText('Live from local host');
+    for (const state of ['idle', 'streamer roll', 'paused', 'streamer roll']) {
+      await expect(operator.locator('#phase')).toHaveText(state);
+      await expect(obs.locator('#phase')).toHaveText(state);
+      for (const viewport of [
+        { width: 1920, height: 1080 },
+        { width: 1280, height: 720 },
+        { width: 640, height: 900 },
+      ]) {
+        for (const page of [operator, obs]) {
+          await page.setViewportSize(viewport);
+          const hidden = page.locator('[hidden]');
+          expect(await hidden.count()).toBeGreaterThan(0);
+          expect(
+            await hidden.evaluateAll((nodes) =>
+              nodes.every((node) => getComputedStyle(node).display === 'none'),
+            ),
+          ).toBe(true);
+        }
+      }
+      if (state === 'idle') await operator.locator('#start').click();
+      else if (state === 'paused') {
+        await expect(operator.locator('#pause')).toBeHidden();
+        await operator.locator('#resume').click();
+      } else {
+        await expect(operator.locator('#resume')).toBeHidden();
+        await operator.locator('#pause').click();
+      }
+    }
+  } finally {
+    await operator.close();
+    await obs.close();
+  }
 });
 
 test('stream loss disables controls; reconnecting the same revision restores them', async ({

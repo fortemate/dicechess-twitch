@@ -36,11 +36,12 @@
 * {
   box-sizing: border-box;
 }
-[hidden] {
-  display: none !important;
-}
 body {
   margin: 0;
+}
+output {
+  display: block;
+  margin-block: 1em;
 }
 main {
   max-width: 1600px;
@@ -223,14 +224,18 @@ h2 {
 }
 .choices {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 10px;
   margin-top: 20px;
 }
 .choice {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
   background: var(--surface-raised);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -238,7 +243,8 @@ h2 {
 }
 .choice strong {
   color: var(--accent);
-  white-space: nowrap;
+  white-space: normal;
+  font-size: clamp(14px, 1.05vw, 21px);
 }
 .promotions {
   display: flex;
@@ -257,11 +263,13 @@ h2 {
   font-size: min(5vw, 7vh);
 }
 .broadcast #announcement {
-  font-size: clamp(18px, 1.5vw, 28px);
-  line-height: 1.45;
+  margin: 10px 0;
+  font-size: clamp(15px, 1.15vw, 23px);
+  line-height: 1.35;
 }
 .broadcast .broadcast-message h2 {
-  font-size: clamp(24px, 2.4vw, 42px);
+  margin: 8px 0 12px;
+  font-size: clamp(22px, 1.8vw, 36px);
 }
 .panel {
   padding: 32px;
@@ -377,18 +385,18 @@ footer {
 .broadcast main {
   max-width: none;
   height: 100vh;
-  padding: 4vh 4vw;
+  padding: 3vh 3vw 2vh;
   display: flex;
   flex-direction: column;
 }
 .broadcast-stage {
   display: grid;
-  grid-template-columns: 0.9fr 1fr;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   align-items: center;
-  gap: 6vw;
+  gap: 3vw;
   flex: 1;
   min-height: 0;
-  padding: 4vh 0;
+  padding: 2vh 0;
 }
 .board-placeholder {
   background: repeating-conic-gradient(#23272c 0% 25%, #1b1e22 0% 50%) 50% / 25%
@@ -420,8 +428,8 @@ footer {
   font-size: clamp(16px, 1.4vw, 26px);
 }
 .broadcast .phase {
-  font-size: 24px;
-  margin-top: 36px;
+  font-size: clamp(16px, 1.25vw, 24px);
+  margin-top: 0;
 }
 .broadcast-footer {
   display: flex;
@@ -483,18 +491,6 @@ footer {
   font-size: clamp(13px, 1.05vw, 20px);
   line-height: 1.4;
 }
-.choices {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-}
-.choice {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  min-width: 0;
-  padding: 12px;
-}
 .choice.previewing {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
@@ -510,10 +506,6 @@ footer {
   font-weight: 700;
   border-top: 1px solid var(--line);
   padding-top: 6px;
-}
-.choice strong {
-  white-space: normal;
-  font-size: clamp(14px, 1.05vw, 21px);
 }
 .mini-board {
   width: 100%;
@@ -551,14 +543,6 @@ footer {
 .broadcast .masthead {
   padding-bottom: max(16px, 2vh);
 }
-.broadcast main {
-  padding: 3vh 3vw 2vh;
-}
-.broadcast-stage {
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 3vw;
-  padding: 2vh 0;
-}
 .broadcast #board {
   width: min(39vw, 66vh);
 }
@@ -567,19 +551,6 @@ footer {
 }
 .broadcast .mini-board {
   width: 100%;
-}
-.broadcast .phase {
-  margin-top: 0;
-  font-size: clamp(16px, 1.25vw, 24px);
-}
-.broadcast .broadcast-message h2 {
-  margin: 8px 0 12px;
-  font-size: clamp(22px, 1.8vw, 36px);
-}
-.broadcast #announcement {
-  margin: 10px 0;
-  font-size: clamp(15px, 1.15vw, 23px);
-  line-height: 1.35;
 }
 .broadcast .dice {
   margin: 10px 0;
@@ -646,4 +617,9 @@ footer {
     font-size: 12px;
     margin-top: 4px;
   }
+}
+
+/* Hidden host controls must override component layout rules. */
+:root [hidden] {
+  display: none;
 }
