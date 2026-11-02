@@ -39,9 +39,9 @@ export class Poll {
   openedAtMs: number;
   closesAtMs: number;
   #remainingMs = 0;
-  #votes = new Map<string, Vote>();
-  #counts = new Map<number, number>();
-  #seen = new Set<string>();
+  readonly #votes = new Map<string, Vote>();
+  readonly #counts = new Map<number, number>();
+  readonly #seen = new Set<string>();
   #decision: VoteDecision | undefined;
   constructor(
     roundId: string,
@@ -73,11 +73,9 @@ export class Poll {
     }));
   }
   remaining(now: number) {
-    return this.phase === 'paused'
-      ? this.#remainingMs
-      : this.phase === 'open'
-        ? Math.max(0, this.closesAtMs - now)
-        : 0;
+    if (this.phase === 'paused') return this.#remainingMs;
+    if (this.phase === 'open') return Math.max(0, this.closesAtMs - now);
+    return 0;
   }
   accept(event: ChatMessage, now: number): boolean {
     if (
