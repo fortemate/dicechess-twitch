@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { resolve } from 'node:path';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { after, before, test } from 'node:test';
 import { startHost } from '../src/host/server.ts';
+import { Session } from '../src/host/session.ts';
 import { pieceAssetFiles } from '../src/shared/artwork.ts';
 import type {
   OperatorBootstrap,
@@ -181,6 +184,8 @@ test('OBS has no mutation or operator resources even with a valid operator capab
   );
   for (const path of [
     '/api/operator',
+    '/api/operator/state',
+    '/api/operator/twitch',
     '/operator.html',
     '/operator.js',
     '/api/command',
@@ -228,6 +233,118 @@ test('operator rejects missing authority, cross-origin requests and DNS rebindin
   });
   assert.equal(rebound, 403);
   assert.deepEqual(await snapshot(), original);
+});
+
+test('every operator read route requires its marker and rejects cross-origin requests', async () => {
+  for (const path of [
+    '/api/operator',
+    '/api/operator/state',
+    '/api/operator/twitch',
+  ]) {
+    const url = `${host.operatorUrl}${path}`;
+    assert.equal((await fetch(url)).status, 403);
+    assert.equal(
+      (await fetch(url, { headers: { 'X-Operator-Request': '1' } })).status,
+      200,
+    );
+    assert.equal(
+      (
+        await fetch(url, {
+          headers: { 'X-Operator-Request': '1', Origin: host.obsUrl },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'X-Operator-Request': '1' },
+        })
+      ).status,
+      405,
+    );
+  }
+});
+
+test('command body framing keeps JSON validation and the exact size boundary across chunks', async () => {
+  function raw(body: string, contentType = 'application/json') {
+    return new Promise<{ status: number; body: string }>(
+      (resolveReply, reject) => {
+        const req = request(
+          `${host.operatorUrl}/api/command`,
+          {
+            method: 'POST',
+            headers: {
+              Origin: host.operatorUrl,
+              Authorization: `Bearer ${capability}`,
+              'Content-Type': contentType,
+            },
+          },
+          (response) => {
+            const chunks: Buffer[] = [];
+            response.on('data', (chunk: Buffer) => chunks.push(chunk));
+            response.on('error', reject);
+            response.on('end', () =>
+              resolveReply({
+                status: response.statusCode!,
+                body: Buffer.concat(chunks).toString('utf8'),
+              }),
+            );
+          },
+        );
+        req.on('error', reject);
+        const boundary = Math.floor(body.length / 2);
+        req.write(body.slice(0, boundary));
+        setImmediate(() => req.end(body.slice(boundary)));
+      },
+    );
+  }
+  const original = await snapshot();
+  assert.equal((await raw('{}', 'text/plain')).status, 415);
+  const invalid = await raw(`{"message":"${privateNote}"`);
+  assert.equal(invalid.status, 400);
+  assert.ok(!invalid.body.includes(privateNote));
+  assert.deepEqual(await snapshot(), original);
+  const accepted = JSON.stringify(command(original, 'At the body boundary'));
+  assert.equal((await raw(accepted.padEnd(4096, ' '))).status, 200);
+  const committed = await snapshot();
+  assert.equal(committed.message, 'At the body boundary');
+  const oversized = JSON.stringify(command(committed, 'Must not commit'));
+  assert.equal((await raw(oversized.padEnd(4097, ' '))).status, 413);
+  assert.deepEqual(await snapshot(), committed);
+});
+
+test('incomplete asset bundles dispose the session and report the first missing allowlisted file', async (context) => {
+  for (const firstPresent of [false, true]) {
+    const directory = mkdtempSync(join(tmpdir(), 'dicechess-assets-'));
+    const session = new Session();
+    const dispose = context.mock.method(session, 'dispose');
+    try {
+      if (firstPresent)
+        writeFileSync(join(directory, 'operator.html'), '<!doctype html>');
+      await assert.rejects(
+        startHost({
+          operatorPort: 0,
+          obsPort: 0,
+          clientDirectory: directory,
+          session,
+        }),
+        (error: NodeJS.ErrnoException) => {
+          assert.equal(error.code, 'ENOENT');
+          assert.equal(
+            error.path,
+            join(directory, firstPresent ? 'obs.html' : 'operator.html'),
+          );
+          return true;
+        },
+      );
+      assert.equal(dispose.mock.callCount(), 1);
+    } finally {
+      session.dispose();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }
 });
 
 test('stale, repeated and wrong-session commands cannot commit a second transition', async () => {
