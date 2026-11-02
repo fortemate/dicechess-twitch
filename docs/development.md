@@ -3,11 +3,13 @@
 The CLI runs one durably saved local game. The operator freely selects legal
 streamer moves; both browser surfaces render host snapshots. Legal-tree
 preparation and candidate search run in workers. OAuth/EventSub has fixture
-checks and host-owned vote collection/timers are implemented. Real broadcaster/
-channel verification remains pending; [durable recovery](recovery.md) is
-implemented. Host-owned animated previews and final-position miniatures are
-implemented. No real secret or configuration file is required for local
-board/candidate work.
+checks and host-owned vote collection/timers are implemented. Focused real
+broadcaster authorization, chat voting and OBS/Twitch playback have been
+checked; independent-viewer and live failure-recovery verification remain
+pending. See the [current evidence](judging/README.md);
+[durable recovery](recovery.md) is implemented. Host-owned animated previews and
+final-position miniatures are implemented. No real secret or configuration file
+is required for local board/candidate work.
 
 ## Clean start
 
@@ -33,23 +35,20 @@ mise exec -- npm run check
 mise exec -- npm run dev
 ```
 
-Repository access is required while visibility remains private. Installation
-downloads public npm packages; no private registry or token is required. If
-managing Node manually, install the exact versions above and omit
-`mise exec --`.
+The repository is public. Installation downloads public npm packages; no private
+registry or token is required. If managing Node manually, install the exact
+versions above and omit `mise exec --`.
 
-The recorded October 25 application baseline `42077d8` is
-[PR #38](https://github.com/fortemate/dicechess-twitch/pull/38), including the
-operator input, multiple-en-passant checkpoint and failed-worker fixes plus the
-complete-game fixture runner. Its CI passed 67 Node and 13 Chromium checks. A
-[fresh-checkout fixture report](measurements/integration-local.json) records two
-complete games at this exact revision with real engine workers and fake Twitch.
-It is separate from real broadcaster/human-game verification. That commit is a
-historical verification point, not the final judged revision. For current PR
-review, use the integration PR's head; after it is merged, use `main`. The owner
-chooses the final judged revision. To reproduce only the recorded baseline,
-check out `42077d86d82e96227fd0d20a8b1886157be4ed35` detached before installing;
-create a feature branch before editing it.
+A clean public clone of application revision
+`d055ab79248536fd2be01b05e4973c6b2011f5cc` passed 80 Node tests and 14 Chromium
+scenarios on November 2, 2026. Two complete games also passed with real engine
+workers, fake Twitch and accelerated timers. The
+[current record](measurements/judging-2026-11-02.json) separates those fixture
+results from real Twitch evidence. The
+[October 25 report](measurements/integration-local.json) remains a historical
+baseline, not the current judging guide. Use
+[the judge run guide](judging/run.md) to reproduce the demo's exact application
+revision.
 
 Development rebuilds `src/` changes and restarts the host. Restart creates a new
 process session/authority and restores the committed game paused from
@@ -95,7 +94,9 @@ npm start
 
 In OBS use a Browser Source URL of `http://127.0.0.1:4311/` at 1920 × 1080.
 Chromium verification does not establish real OBS capture or Twitch evidence;
-those belong to later rehearsal issues.
+see
+[the focused live evidence](../README.md#focused-live-tests--november-2-2026)
+and the remaining rehearsal limits.
 
 For Twitch setup, follow [the connection guide](twitch-connection.md). A public
 Client ID and explicit broadcaster consent are needed for a real connection;

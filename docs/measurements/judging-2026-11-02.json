@@ -1,0 +1,71 @@
+{
+  "kind": "pre-deadline-public-clone-verification",
+  "verifiedOn": "2026-11-02",
+  "applicationRevision": "d055ab79248536fd2be01b05e4973c6b2011f5cc",
+  "publicCloneWithoutGitHubCredentials": true,
+  "node": "24.22.1",
+  "npm": "11.19.1",
+  "platform": "macOS arm64",
+  "commands": [
+    "mise exec -- npm ci",
+    "mise exec -- npm run check",
+    "mise exec -- npm run test:browser",
+    "mise exec -- npm run rehearse:full-game"
+  ],
+  "results": {
+    "nodeTests": 80,
+    "chromiumScenarios": 14,
+    "completeFixtureGames": 2,
+    "npmAuditVulnerabilitiesAtInstall": 0
+  },
+  "fixtureGames": [
+    {
+      "outcome": "passed",
+      "streamerColor": "b",
+      "turns": 14,
+      "polls": 6,
+      "maxChoices": 3,
+      "phase": "game-over",
+      "storageHealthy": true,
+      "winner": "b"
+    },
+    {
+      "outcome": "passed",
+      "streamerColor": "w",
+      "turns": 9,
+      "polls": 4,
+      "maxChoices": 3,
+      "phase": "game-over",
+      "storageHealthy": true,
+      "winner": "w"
+    }
+  ],
+  "liveEvidence": {
+    "kind": "single-broadcaster-account live rehearsal; not independent viewers",
+    "firstVote": {
+      "tally": [1, 0, 0],
+      "option": 1,
+      "moves": ["b7b6", "c8b7", "h6f5"],
+      "result": "Control returned to streamer; resulting board checked in Twitch player."
+    },
+    "demoVote": {
+      "tally": [0, 1, 0],
+      "option": 2,
+      "moves": ["f5e3", "e3d1", "d7c8"],
+      "result": "White queen captured on d1; control returned to streamer."
+    }
+  },
+  "demo": {
+    "url": "https://youtu.be/sJgxRbO8JU0",
+    "durationSeconds": 159,
+    "language": "English",
+    "ownerReviewedNarration": true
+  },
+  "limitations": [
+    "OAuth/chat in automated tests are explicit fixtures.",
+    "Full-game fixture clocks are accelerated and do not measure stream latency.",
+    "Independent multi-viewer play, load and engagement impact remain unverified.",
+    "Broader real-service revocation/network-loss recovery remains unverified.",
+    "Documentation changes following this application revision do not change the game shown in the demo."
+  ]
+}

@@ -1,88 +1,106 @@
-# Judge run guide — draft build and access pending
+# Install and test the demonstrated application
 
-Repository:
-[fortemate/dicechess-twitch](https://github.com/fortemate/dicechess-twitch). It
-was verified private on October 25, 2026; judge access and a final judged commit
-are not yet confirmed. The owner must choose/review that revision and provide
-access before treating this as a ready package. Review the integration PR's head
-until it is merged, then use `main`. The recorded application baseline is
-[`42077d8`](https://github.com/fortemate/dicechess-twitch/pull/38), including
-the operator input, multiple-en-passant checkpoint and failed-worker fixes; it
-is not a final judged revision. See [development](../development.md) for
-verification evidence.
+The [repository](https://github.com/fortemate/dicechess-twitch) is public. The
+[2:39 demo](https://youtu.be/sJgxRbO8JU0) uses application revision
+`d055ab79248536fd2be01b05e4973c6b2011f5cc`. Later documentation corrections do
+not change that demonstrated application. No private package registry, Fortemate
+account, model or OpenAI API key is needed.
 
-## Local install and checks
+## Quick local start
 
-Prerequisites: Git/repository access, Node.js **24.22.1**, npm **11.19.1** and
-network access to the public npm registry. The application runs on the local
-machine; it needs no private Fortemate registry/model, paid game account or
-OpenAI API key. See [development](../development.md) for mise setup and actual
-platform/check evidence.
+Requires Git, Node.js **24.22.1** and npm **11.19.1**. With
+[mise](https://mise.jdx.dev/):
 
 ```sh
 git clone https://github.com/fortemate/dicechess-twitch.git
 cd dicechess-twitch
-# For an unmerged PR, check out its head branch before installing.
-# For judging, check out the exact revision selected by the owner.
+git checkout d055ab79248536fd2be01b05e4973c6b2011f5cc
 mise trust
 mise install
 mise exec -- npm ci
-mise exec -- npm run check
-mise exec -- npx playwright install chromium
-mise exec -- npm run test:browser
 mise exec -- npm run dev
 ```
 
-If using the exact runtime without mise, omit its wrapper. Open operator
-`http://127.0.0.1:4310/` and read-only scene `http://127.0.0.1:4311/`. Start a
-fresh local game or explicitly resume the saved paused game. Streamer board play
-and candidate previews can be inspected before Twitch is configured.
-Multiple-choice voting waits for a healthy real connection.
+With the pinned Node/npm already active, omit the mise commands and wrapper.
+Keep ports **4310** and **4311** free. Both listeners bind to `127.0.0.1`; use
+these numeric URLs, rather than `localhost`:
 
-For Twitch operation, the broadcaster uses a registered public application ID
-and approves read-only chat access through the operator page. The complete
-[connection setup](../twitch-connection.md) describes the flow; no access or
-refresh token is supplied to a judge, file or browser snapshot. Launch with the
-public ID as shown there. The registered ID/channel setup and live rehearsal
-remain owner steps; no fake configured value is presented as ready.
+- Operator: <http://127.0.0.1:4310/>
+- Read-only broadcast scene: <http://127.0.0.1:4311/>
 
-Use the read-only URL as an OBS Browser Source at 1920×1080. The separate
-[fixture command](../broadcast-rehearsal.md#rare-cases-in-a-separate-fixture-session)
-uses ports 4410/4411, fixed dice and no real Twitch connection. It may check
-rare mechanics, but cannot prove the live demo.
+Choose a streamer color and click **Start game**. When it is your turn, click
+**Roll dice**, select a piece, then a highlighted legal destination. Finish all
+required moves. On chat's turn, the host rolls once and presents up to three
+complete plans. Local board play and previews work without Twitch credentials;
+multi-choice voting waits for a healthy Twitch connection. Capture the opposing
+king to end the game. Fewer meaningful choices are explained, never fabricated.
 
-## Limits relevant to testing
+The host saves `.local/session.json`. After a restart, reload the operator and
+explicitly resume the restored paused game. Preserve this file when diagnosing a
+failed restart. See [recovery](../recovery.md) for save/lock failures.
 
-- One installed broadcaster channel and one local game; both listeners bind
-  loopback. Operator actions do not exist on the OBS listener.
-- Up to three distinct retained complete turns. Bounded sampling/common equity
-  estimation does not guarantee a global top three, and weak/missing choices are
-  not padded. King capture ends the game.
-- Default polling is 30 seconds after host preview. Actual stream-delay
-  usability has not been observed; source/receipt/deadline admission has zero
-  grace and untagged commands have cross-round intent ambiguity.
-- EventSub loss discards the interrupted vote. Recovery requires a healthy
-  connection and explicit resume with unchanged choices/dice. Process restart
-  requires fresh Twitch authorization; credentials are not persisted.
-- The CLI saves committed game/history/decision state locally; saving failure
-  rolls back and pauses. See [recovery](../recovery.md) for file/lock limits and
-  explicit retry. Browser tests isolate their checkpoint from the owner game.
-- macOS clean-clone and Linux CI evidence exist. Windows storage/font behavior
-  and compressed real-stream readability are unverified.
+## Real Twitch voting and OBS
 
-## Source and evidence boundary
+Follow the [Twitch connection guide](../twitch-connection.md) to register a
+**public** Twitch application. Start the host with its public Client ID:
 
-The [provenance inventory](../provenance.md) identifies the existing public AGPL
-engine and pinned dependencies. This repository's application code and
-CSS/text/system-font visuals are new work; no private TV assets, trained
-weights, voices, music or private infrastructure are required. Keep notices with
-source/distribution as applicable.
+```sh
+TWITCH_CLIENT_ID='<public-client-id>' mise exec -- npm run dev
+```
 
-Local automated results and the built-process restart report are available. The
-[fresh-checkout report](../measurements/integration-local.json) records complete
-20- and 13-turn fixture games at the pinned baseline with real engine workers,
-fake Twitch and accelerated timers. It does not establish a real broadcast. The
-[live report template](../rehearsal-report-template.md) is unfilled, the demo is
-unrecorded and neither YouTube access nor final Submitted status is verified.
-The owner completes [the final checklist](../submission.md), including the
-organizer-designated private-repository access route, before submission.
+The broadcaster clicks **Connect Twitch** and personally completes Twitch's
+authorization. This requests `user:read:chat` only; the application never sends
+chat messages. No client secret is required and no judge receives the owner's
+credentials. Authorization stays in host memory and must be renewed after a host
+restart.
+
+Add `http://127.0.0.1:4311/` to OBS as a **1920 × 1080 Browser Source**. Keep
+the operator and activation material off the stream. When the animated previews
+finish and voting opens, send `!vote 1`, `!vote 2` or `!vote 3` in the connected
+channel. A message sent before opening or received after the deadline does not
+count. If no vote arrives, click **Extend empty vote** and send a new vote
+during the reopened poll. Each viewer has one equal vote and may change it.
+
+## Repeat the checks
+
+Stop the development process before rebuilding the same output directory.
+
+```sh
+mise exec -- npm run check
+mise exec -- npx playwright install chromium
+mise exec -- npm run test:browser
+mise exec -- npm run rehearse:full-game
+```
+
+On clean Linux, use `npx playwright install --with-deps chromium` to install the
+browser's system libraries too; administrator privileges may be required. The
+November 2 [verification](../measurements/judging-2026-11-02.json) passed 80
+Node tests, 14 Chromium scenarios and two complete fixture games from a clean
+public clone on macOS. GitHub CI checks the pinned runtime on Ubuntu separately.
+
+Browser tests use isolated random ports and temporary/in-memory storage. The
+full-game runner uses real public engine workers with fake Twitch, controlled
+dice and accelerated timers. Neither authorizes Twitch or touches your saved
+operator game. [Rare-case fixtures](../broadcast-rehearsal.md) are separate,
+visibly labelled sessions on 4410/4411, not the live demo.
+
+## Practical limits
+
+- One local game and installed broadcaster channel; no hosted multi-channel
+  service and no click-to-vote Extension.
+- Candidate search is bounded; it does not promise the globally best three
+  plans. The engine owns complete-turn legality.
+- Default voting lasts 30 seconds after previews. It can be set to 5–120 seconds
+  before a round. No stream-latency guarantee is claimed; late untagged commands
+  cannot identify the viewer's intended prior round.
+- Interrupted votes are discarded. Health recovery and explicit resume replay
+  the same saved choices under a fresh round identity.
+- Actual live evidence uses one broadcaster account voting. Independent viewers,
+  load, audience impact and broader real-service failure recovery remain
+  unverified.
+- Windows installation/storage and real-device browser behavior are unverified.
+
+See [provenance](../provenance.md),
+[third-party notices](../../THIRD_PARTY_NOTICES.md) and the
+[submission record](../submission.md) for the existing engine, artwork, license
+boundaries and continued judging access.

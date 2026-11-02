@@ -4,11 +4,18 @@ A streamer plays Dice Chess freely; their Twitch chat chooses between up to
 three engine-generated complete turns. Built with OpenAI Codex for the
 [Codex x TwitchCon Hackathon](https://twitchcon-codex.devpost.com/).
 
-**Status: local MVP, live Twitch verification pending.** Streamer play,
+**Status: MVP with a focused live Twitch test completed.** Streamer play,
 candidate generation, OAuth/EventSub, voting, animated previews and durable
 recovery are implemented. Automated checks use the public engine and explicit
-Twitch fixtures. Real broadcaster consent, a human-viewer Twitch/OBS game and
-demo footage have not been verified. This repository is not a submitted entry.
+Twitch fixtures. A real broadcaster-account vote, complete-turn execution and
+the resulting board in the Twitch player were verified on November 2, 2026.
+Multi-viewer broadcast and live failure-recovery checks remain pending; see
+[checks and evidence](#checks-and-evidence). The owner submitted the project on
+November 2, 2026.
+
+**[Watch the 2:39 demo](https://youtu.be/sJgxRbO8JU0)** ·
+**[Devpost entry](https://devpost.com/software/twitch-plays-dice-chess)** ·
+**[Judge run guide](docs/judging/run.md)**
 
 ## Run locally
 
@@ -24,9 +31,8 @@ mise exec -- npm ci
 mise exec -- npm run dev
 ```
 
-For an unmerged PR, check out its head branch before installing. Repository
-access is required while it remains private. With the exact Node/npm versions
-already active, omit the mise commands and wrapper.
+For an unmerged PR, check out its head branch before installing. With the exact
+Node/npm versions already active, omit the mise commands and wrapper.
 
 Open the [operator](http://127.0.0.1:4310/) to start a game and play legal
 streamer turns. Add the read-only [game scene](http://127.0.0.1:4311/) to OBS as
@@ -43,6 +49,10 @@ explicitly resume the restored game. Twitch authorization stays in memory and
 must be renewed after restart. Keep the operator page off the stream.
 
 ## The MVP
+
+Dice faces name piece types. One turn can contain several moves using the rolled
+pieces; the engine determines complete legal turns. Capture the opposing king to
+win.
 
 1. The streamer rolls and plays any legal turn on the board.
 2. The chat side rolls once; the engine prepares up to **three distinct
@@ -66,13 +76,41 @@ mise exec -- npx playwright install chromium
 mise exec -- npm run test:browser
 ```
 
-`check` runs formatting, strict TypeScript, build and Node tests. The recorded
-[application baseline](docs/measurements/integration-local.json) passed **67
-Node tests and 13 Chromium scenarios**. A fresh checkout completed two games
-with real engine workers, fake Twitch and accelerated timers; these are local
-integration checks, not live audience or stream-latency evidence.
+`check` runs formatting, strict TypeScript, build and Node tests. A clean public
+clone of application revision `d055ab7` on November 2 passed **80 Node tests and
+14 Chromium scenarios**, with **zero npm audit vulnerabilities** at install
+time. Two complete games also passed with real engine workers, fake Twitch and
+accelerated timers. See the
+[current verification record](docs/measurements/judging-2026-11-02.json). These
+are local integration checks, not independent-viewer or stream-latency
+measurements. The [October 25 report](docs/measurements/integration-local.json)
+is retained as a historical baseline.
 
-Optional fixture checks:
+### Focused live tests — November 2, 2026
+
+The local application at revision `d055ab7` was connected to real Twitch chat
+and broadcast through OBS. The broadcaster account sent `!vote 1` during an open
+poll. The host recorded one voter, a **1–0–0** tally and option 1 as the winner.
+It executed **b7–b6, c8–b7, h6–f5** and returned control to the streamer. The
+resulting board was visually verified in the live Twitch player, rather than
+only in the local OBS preview. The owner confirmed intelligible voice in Twitch
+playback.
+
+OBS reported zero network-dropped frames before stopping the test stream. An
+encoding-overload warning appeared earlier and was absent at the final checks;
+this does not establish zero encoding skips throughout the broadcast.
+
+The later recorded demo contains a second real vote: option 2 won **0–1–0**. The
+black knight moved **f5–e3**, captured the white queen on **d1**, and the black
+king moved **d7–c8**. Control returned to the streamer. The English demo
+includes actual Codex review/check footage and owner-approved narration.
+
+Both checks used one accepted broadcaster-account voter. Independent-viewer
+voting and vote changes, disconnect/reconnect and authorization recovery during
+a broadcast remain unverified. Automated fixtures remain separate evidence for
+cases not exercised live.
+
+### Optional fixture checks
 
 ```sh
 mise exec -- npm run rehearse:full-game
@@ -82,17 +120,20 @@ mise exec -- npm run rehearse:fixtures -- promotion
 The full-game runner writes reports under `.local/rehearsals/`. The separate
 rare-case host uses ports 4410/4411, fixed positions/dice and no Twitch or saved
 operator game. See [development](docs/development.md) for repeatable checks and
-[broadcast rehearsal](docs/broadcast-rehearsal.md) for the unfinished live plan.
+[broadcast rehearsal](docs/broadcast-rehearsal.md) for the broader live
+checklist.
 
 ## Limits
 
 - One local game and one installed broadcaster channel; no hosted service.
 - At most three meaningful choices. The engine adapter performs bounded sampling
   and evaluation; it does not promise a globally optimal top three.
-- Stream delay has not been measured. Vote admission has zero delivery grace; a
-  delayed viewer's intended round cannot be inferred from plain `!vote N`.
-- Real OAuth/chat, human-viewer play, OBS capture and account/network recovery
-  still need a broadcaster-run rehearsal. Local fixtures do not establish them.
+- Stream delay varies; the focused live test establishes no latency guarantee.
+  Vote admission has zero delivery grace; a delayed viewer's intended round
+  cannot be inferred from plain `!vote N`.
+- Real OAuth/chat, one broadcaster-account vote and the resulting Twitch video
+  have been checked. Multi-viewer play and account/network recovery still need
+  live rehearsal. Local fixtures do not establish those outcomes.
 
 ## Project documents
 
@@ -119,9 +160,8 @@ operator game. See [development](docs/development.md) for repeatable checks and
   implementation issue graph.
 - [Broadcast rehearsal](docs/broadcast-rehearsal.md): owner-run live cases,
   isolated rare-case fixtures and an unfilled evidence template.
-- [Judging package draft](docs/judging/README.md): English description,
-  real-footage shot plan, verified implementation session and run/access
-  checklist.
+- [Judging package](docs/judging/README.md): English description, recorded demo,
+  verified implementation session and run/access checklist.
 - [Submission checklist](docs/submission.md): judging access, English demo and
   the actual Codex session.
 - [Issues](https://github.com/fortemate/dicechess-twitch/issues): unfinished
@@ -129,16 +169,18 @@ operator game. See [development](docs/development.md) for repeatable checks and
 
 ## Dates and existing foundation
 
-The submission window is October 23-November 2, 2026. The official deadline is
-November 2 at 14:00 Pacific Time. Our package-ready target is **November 1** and
-owner submission target is **November 2 at 22:00 Europe/Riga**, with time
-reserved before the official deadline.
+The owner completed the
+[Devpost entry](https://devpost.com/software/twitch-plays-dice-chess) on
+November 2, 2026. The demonstration uses application revision
+`d055ab79248536fd2be01b05e4973c6b2011f5cc`; documentation may be updated
+separately. Keep the judged source and required viewing/testing access available
+throughout judging. See the [submission record](docs/submission.md).
 
 The existing [Dice Chess Engine](https://github.com/fortemate/dicechess-engine)
 supplies the rules, legal turn generation and search foundation. This new
 project owns the Twitch connection, three-choice audience experience, voting,
 presentation and session orchestration developed during the hackathon window.
-Reused work will be identified explicitly in the submission.
+The submission identifies reused work separately.
 
 See [third-party provenance](docs/provenance.md) for the pinned public engine,
 tools and asset sources. No private models, books, production search profiles or
