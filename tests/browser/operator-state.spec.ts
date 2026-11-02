@@ -168,3 +168,38 @@ test('restored form values match the host and unrelated snapshots preserve unpub
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('operator input works while the initial Twitch detail request is still pending', async ({
+  page,
+}) => {
+  const session = new Session();
+  const host = await startHost({
+    operatorPort: 0,
+    obsPort: 0,
+    clientDirectory: resolve('dist/client'),
+    session,
+  });
+  let release!: () => void;
+  const details = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let requested = 0;
+  await page.route('**/api/operator/twitch', async (route) => {
+    requested++;
+    await details;
+    await route.continue();
+  });
+  try {
+    await page.goto(host.operatorUrl, { waitUntil: 'commit' });
+    await expect.poll(() => requested).toBeGreaterThan(0);
+    const start = page.getByRole('button', { name: 'Start game', exact: true });
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page.locator('#phase')).toHaveText('streamer roll');
+    expect(session.snapshot().game.phase).toBe('streamer-roll');
+  } finally {
+    release();
+    await page.unrouteAll({ behavior: 'wait' });
+    await host.close();
+  }
+});

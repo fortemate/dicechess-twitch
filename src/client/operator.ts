@@ -4,7 +4,10 @@ import type {
   PublicSnapshot,
 } from '../shared/protocol.ts';
 import type { OperatorGameState } from '../shared/game.ts';
-import type { TwitchOperatorState } from '../twitch/types.ts';
+import type {
+  TwitchOperatorState,
+  TwitchPublicState,
+} from '../twitch/types.ts';
 import { renderBoard } from './board.ts';
 import { displayBoard, element, subscribe } from './view.ts';
 
@@ -92,8 +95,7 @@ async function loadControls() {
     if (!response.ok) return;
     const next = (await response.json()) as OperatorGameState;
     if (
-      snapshot &&
-      next.sessionId === snapshot.sessionId &&
+      next.sessionId === snapshot?.sessionId &&
       next.revision >= (controls?.revision ?? -1)
     )
       controls = next;
@@ -114,8 +116,7 @@ async function loadTwitch() {
       revision: number;
     };
     if (
-      !snapshot ||
-      next.sessionId !== snapshot.sessionId ||
+      next.sessionId !== snapshot?.sessionId ||
       next.revision < (twitch?.revision ?? -1)
     )
       return;
@@ -131,77 +132,62 @@ async function loadTwitch() {
   }
 }
 
-subscribe(
-  (next) => {
-    if (snapshot && next.sessionId !== snapshot.sessionId) {
-      authority = undefined;
-      controls = undefined;
-      twitch = undefined;
-      element('feedback').textContent =
-        'Host restarted. Reload this operator page.';
-    }
-    if (next.game.positionVersion !== lastPositionVersion) {
-      selected = undefined;
-      element('promotions').replaceChildren();
-      lastPositionVersion = next.game.positionVersion;
-    }
-    if (
-      !snapshot ||
-      snapshot.sessionId !== next.sessionId ||
-      snapshot.message !== next.message
-    )
-      element<HTMLInputElement>('message-input').value = next.message;
-    if (
-      !snapshot ||
-      snapshot.sessionId !== next.sessionId ||
-      snapshot.voting.durationMs !== next.voting.durationMs
-    )
-      element<HTMLInputElement>('vote-seconds').value = String(
-        next.voting.durationMs / 1000,
-      );
-    snapshot = next;
-    const phase = next.twitch.phase;
-    element('twitch-description').textContent =
-      phase === 'not-configured'
-        ? 'Set TWITCH_CLIENT_ID to a registered public application ID, then restart.'
-        : phase === 'authorizing'
-          ? 'Approve read-only chat access on Twitch. Leave this app running.'
-          : phase === 'connected'
-            ? `Reading ${next.twitch.channel ?? 'broadcaster'} chat · ${next.twitch.receivedMessages} messages received.`
-            : phase === 'reconnecting'
-              ? next.twitch.healthy
-                ? 'Twitch is moving the connection. Chat delivery continues.'
-                : 'Chat connection lost. Waiting to reconnect; the saved game stays paused.'
-              : phase === 'revoked'
-                ? 'Twitch authorization ended. Connect again to continue.'
-                : phase === 'error'
-                  ? 'Twitch setup failed. Connect again to retry.'
-                  : 'Connect your broadcaster account to read chat.';
-    updateControls();
-    void loadControls();
-    void loadTwitch();
-  },
-  (live) => {
-    connected = live;
-    updateControls();
-  },
-);
+function twitchDescription(state: TwitchPublicState): string {
+  switch (state.phase) {
+    case 'not-configured':
+      return 'Set TWITCH_CLIENT_ID to a registered public application ID, then restart.';
+    case 'authorizing':
+      return 'Approve read-only chat access on Twitch. Leave this app running.';
+    case 'connected':
+      return `Reading ${state.channel ?? 'broadcaster'} chat · ${state.receivedMessages} messages received.`;
+    case 'reconnecting':
+      return state.healthy
+        ? 'Twitch is moving the connection. Chat delivery continues.'
+        : 'Chat connection lost. Waiting to reconnect; the saved game stays paused.';
+    case 'revoked':
+      return 'Twitch authorization ended. Connect again to continue.';
+    case 'error':
+      return 'Twitch setup failed. Connect again to retry.';
+    default:
+      return 'Connect your broadcaster account to read chat.';
+  }
+}
 
-try {
-  const response = await fetch('/api/operator', {
-    headers: { 'X-Operator-Request': '1' },
-  });
-  if (!response.ok) throw new Error('Operator unavailable');
-  const bootstrap = (await response.json()) as OperatorBootstrap;
-  authority = bootstrap.capability;
-  element('operator-note').textContent = bootstrap.operatorNote;
+function syncDrafts(next: PublicSnapshot) {
+  const newSession = snapshot?.sessionId !== next.sessionId;
+  if (newSession || snapshot?.message !== next.message)
+    element<HTMLInputElement>('message-input').value = next.message;
+  if (newSession || snapshot?.voting.durationMs !== next.voting.durationMs)
+    element<HTMLInputElement>('vote-seconds').value = String(
+      next.voting.durationMs / 1000,
+    );
+}
+
+function receiveSnapshot(next: PublicSnapshot) {
+  if (snapshot && next.sessionId !== snapshot.sessionId) {
+    authority = undefined;
+    controls = undefined;
+    twitch = undefined;
+    element('feedback').textContent =
+      'Host restarted. Reload this operator page.';
+  }
+  if (next.game.positionVersion !== lastPositionVersion) {
+    selected = undefined;
+    element('promotions').replaceChildren();
+    lastPositionVersion = next.game.positionVersion;
+  }
+  syncDrafts(next);
+  snapshot = next;
+  element('twitch-description').textContent = twitchDescription(next.twitch);
   updateControls();
   void loadControls();
   void loadTwitch();
-} catch {
-  element('feedback').textContent =
-    'Operator unavailable. Reload after the host restarts.';
 }
+
+subscribe(receiveSnapshot, (live) => {
+  connected = live;
+  updateControls();
+});
 
 type WithoutIdentity<T> = T extends unknown
   ? Omit<T, 'sessionId' | 'expectedRevision'>
@@ -249,7 +235,7 @@ async function send(action: Action) {
 }
 
 function clickSquare(square: string) {
-  if (!ready() || !snapshot || snapshot.game.phase !== 'streamer-turn') return;
+  if (!ready() || snapshot?.game.phase !== 'streamer-turn') return;
   const actions = controls?.legalActions ?? [];
   const moves = selected
     ? actions.filter(
@@ -320,3 +306,20 @@ element<HTMLFormElement>('vote-settings-form').onsubmit = (event) => {
     seconds: Number(element<HTMLInputElement>('vote-seconds').value),
   });
 };
+
+// Register input handlers before bootstrap can enable controls. Fetch both
+// operator projections concurrently while waiting for initialization.
+try {
+  const response = await fetch('/api/operator', {
+    headers: { 'X-Operator-Request': '1' },
+  });
+  if (!response.ok) throw new Error('Operator unavailable');
+  const bootstrap = (await response.json()) as OperatorBootstrap;
+  authority = bootstrap.capability;
+  element('operator-note').textContent = bootstrap.operatorNote;
+  updateControls();
+  await Promise.all([loadControls(), loadTwitch()]);
+} catch {
+  element('feedback').textContent =
+    'Operator unavailable. Reload after the host restarts.';
+}
