@@ -107,16 +107,10 @@ export async function startHost(options: HostOptions) {
   };
   session.onChange(broadcast);
 
-  const operatorReads = new Map<string, () => unknown>([
-    [
-      '/api/operator',
-      () => ({
-        capability,
-        operatorNote: options.operatorNote ?? 'Local session controls',
-      }),
-    ],
-    ['/api/operator/state', () => session.operatorState()],
-    ['/api/operator/twitch', () => session.operatorTwitchState()],
+  const operatorPaths = new Set([
+    '/api/operator',
+    '/api/operator/state',
+    '/api/operator/twitch',
   ]);
 
   async function applyCommand(
@@ -225,11 +219,24 @@ export async function startHost(options: HostOptions) {
         return json(response, 403, { error: 'Invalid origin' });
       }
       const path = request.url;
-      const operatorRead = operatorReads.get(path ?? '');
-      if (surface === 'operator' && request.method === 'GET' && operatorRead) {
+      if (
+        surface === 'operator' &&
+        request.method === 'GET' &&
+        operatorPaths.has(path ?? '')
+      ) {
         if (request.headers['x-operator-request'] !== '1')
           return json(response, 403, { error: 'Operator request required' });
-        return json(response, 200, operatorRead());
+        switch (path) {
+          case '/api/operator':
+            return json(response, 200, {
+              capability,
+              operatorNote: options.operatorNote ?? 'Local session controls',
+            });
+          case '/api/operator/state':
+            return json(response, 200, session.operatorState());
+          case '/api/operator/twitch':
+            return json(response, 200, session.operatorTwitchState());
+        }
       }
       if (
         surface === 'operator' &&
