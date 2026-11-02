@@ -38,7 +38,7 @@
           <p id="preview-caption" class="preview-caption">
             Current game position
           </p>
-          <p id="announcement" role="status">Waiting for the local host</p>
+          <output id="announcement">Waiting for the local host</output>
           <div
             id="promotions"
             class="promotions"
@@ -105,7 +105,7 @@
           <button type="button" id="extend-vote" hidden>
             Extend empty vote
           </button>
-          <p id="vote-status" role="status">No vote open</p>
+          <output id="vote-status">No vote open</output>
           <form id="broadcast-form">
             <fieldset id="controls" disabled>
               <label for="message-input">On-air message</label
@@ -119,14 +119,14 @@
                 Publish to scene <span aria-hidden="true">↗</span>
               </button>
             </fieldset>
-            <p class="feedback" id="feedback" role="status">
+            <output class="feedback" id="feedback">
               Changes publish through the host.
-            </p>
+            </output>
           </form>
           <h2 class="on-air-title" id="message">Waiting for the local host</h2>
-          <p class="connection" id="connection" role="status">
+          <output class="connection" id="connection">
             Connecting to host…
-          </p>
+          </output>
           <dl class="metadata">
             <div>
               <dt>Revision</dt>
