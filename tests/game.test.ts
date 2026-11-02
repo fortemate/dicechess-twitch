@@ -3,8 +3,9 @@ import { test } from 'node:test';
 import { DiceChess } from '@fortemate/dicechess-engine';
 import type { MoveTree } from '@fortemate/dicechess-engine';
 import { Game } from '../src/host/game.ts';
-import { enumerateTurns } from '../src/engine/search.ts';
+import { applyUci, enumerateTurns } from '../src/engine/search.ts';
 import type { CandidateRequest, CandidateResult } from '../src/engine/types.ts';
+import type { SavedGame } from '../src/host/saved-game.ts';
 import { fixtures } from './candidate-fixtures.ts';
 
 type Options = ConstructorParameters<typeof Game>[0];
@@ -417,4 +418,98 @@ test('choices completed during a connection loss remain paused under a fresh rou
   } finally {
     game.dispose();
   }
+});
+
+test('restored choices and animation cursors are rechecked without rerolling or regenerating candidates', async () => {
+  const source = make({
+    initialDfen: unrolled(fixtures.two),
+    roll: () => [1, 1, 1],
+    candidates: async (request) => set(request, 2),
+    externalPreview: true,
+    animationStepMs: 10000,
+  });
+  let preview: SavedGame;
+  let animation: SavedGame;
+  try {
+    source.start('b');
+    await until(() => source.snapshot().phase === 'preview');
+    preview = source.checkpoint();
+    assert.ok(preview.candidates!.choices[0]!.moves.length > 1);
+    source.openVoting(preview.roundId!);
+    source.resolveChoice(preview.roundId!, 1);
+    source.pause();
+    animation = source.checkpoint();
+  } finally {
+    source.dispose();
+  }
+  const cases: {
+    name: string;
+    saved: SavedGame;
+    phase: 'preview' | 'chat-animation' | 'paused';
+  }[] = [
+    { name: 'complete choices', saved: preview, phase: 'preview' },
+    { name: 'unplayed animation', saved: animation, phase: 'chat-animation' },
+  ];
+  // Direct internal fixtures exercise defense in depth. Production checkpoints
+  // also pass parseCheckpoint before Game.restore is called.
+  for (const fault of ['prefix', 'illegal move', 'wrong result'] as const) {
+    const saved = structuredClone(preview);
+    const choice = saved.candidates!.choices[0]!;
+    let moves = choice.moves;
+    if (fault === 'prefix') moves = moves.slice(0, -1);
+    else if (fault === 'illegal move') moves = ['a1a8'];
+    let resultingDfen = choice.resultingDfen;
+    if (fault === 'wrong result') resultingDfen = saved.rolledDfen!;
+    else if (fault === 'prefix')
+      resultingDfen = DiceChess.endTurn(
+        moves.reduce(applyUci, saved.rolledDfen!),
+      )!;
+    saved.candidates!.choices = [{ ...choice, moves, resultingDfen }];
+    cases.push({ name: fault, saved, phase: 'paused' });
+  }
+  for (const fault of ['cursor', 'option', 'round', 'position'] as const) {
+    const saved = structuredClone(animation);
+    if (fault === 'cursor') saved.animation!.nextIndex = 1;
+    if (fault === 'option')
+      saved.animation!.choice = { ...saved.animation!.choice, option: 3 };
+    if (fault === 'round') saved.resolvedRounds = [];
+    if (fault === 'position')
+      saved.dfen = applyUci(
+        saved.rolledDfen!,
+        saved.animation!.choice.moves[0]!,
+      );
+    cases.push({ name: fault, saved, phase: 'paused' });
+  }
+  for (const scenario of cases) {
+    const restored = make({
+      externalPreview: true,
+      animationStepMs: 10000,
+      roll: () => assert.fail('Restoration must keep the frozen roll'),
+      candidates: () => assert.fail('Restoration must keep exact choices'),
+    });
+    try {
+      restored.restore(scenario.saved, false);
+      assert.equal(restored.resume(), true, scenario.name);
+      await until(() => restored.snapshot().phase === scenario.phase);
+      assert.equal(
+        restored.snapshot().dfen,
+        scenario.saved.dfen,
+        scenario.name,
+      );
+      assert.deepEqual(restored.checkpoint().history, scenario.saved.history);
+      if (scenario.phase === 'paused')
+        assert.match(restored.snapshot().announcement, /preparation failed/);
+    } finally {
+      restored.dispose();
+    }
+  }
+  const delayed = deferred<MoveTree | undefined>();
+  const disposed = make({ tree: () => delayed.promise });
+  disposed.restore(preview, false);
+  disposed.resume();
+  disposed.dispose();
+  const stopped = disposed.snapshot();
+  delayed.resolve(DiceChess.getLegalTurnTree(preview.rolledDfen!));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(disposed.snapshot(), stopped);
 });

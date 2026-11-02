@@ -33,7 +33,7 @@ export interface GameOptions {
 }
 
 export class Game {
-  #options: GameOptions;
+  readonly #options: GameOptions;
   #phase: GamePhase = 'idle';
   #resumePhase: GamePhase | null = null;
   #dfen = initialPosition;
@@ -230,8 +230,7 @@ export class Game {
       return false;
     const set = this.#candidates;
     if (
-      !set ||
-      set.request.rolledDfen !== this.#dfen ||
+      set?.request.rolledDfen !== this.#dfen ||
       set.request.positionVersion !== this.#positionVersion
     )
       return false;
@@ -331,6 +330,16 @@ export class Game {
       state.phase === 'paused' ? state.resumePhase : state.phase;
     this.#chatUnavailable =
       state.chatUnavailable || requiresChat || effective === 'voting';
+    this.#restorePhase(effective);
+    if (this.#phase === 'paused')
+      this.#announcement =
+        'Saved game restored and paused. Reconnect chat if required, then resume explicitly.';
+    else if (effective === 'game-over')
+      this.#announcement = `${this.#winner === this.#streamerColor ? 'Streamer' : 'Chat'} wins by king capture.`;
+    else this.#announcement = 'Saved local session restored.';
+  }
+
+  #restorePhase(effective: GamePhase | null) {
     if (effective === 'idle' || effective === 'game-over') {
       this.#phase = effective;
       this.#resumePhase = null;
@@ -355,12 +364,6 @@ export class Game {
       else if (effective === 'chat-animation' || effective === 'resolving')
         this.#failed = 'animation';
     }
-    this.#announcement =
-      this.#phase === 'paused'
-        ? 'Saved game restored and paused. Reconnect chat if required, then resume explicitly.'
-        : effective === 'game-over'
-          ? `${this.#winner === this.#streamerColor ? 'Streamer' : 'Chat'} wins by king capture.`
-          : 'Saved local session restored.';
   }
 
   storageBlocked(blocked: boolean) {
@@ -618,61 +621,12 @@ export class Game {
           else this.#pass();
           return;
         }
-        for (const choice of set.choices) {
-          let node = tree;
-          let replay = root;
-          for (const move of choice.moves) {
-            if (!Object.hasOwn(node, move)) {
-              this.#fail(kind);
-              return;
-            }
-            const next = this.#apply(replay, move);
-            if (!next) {
-              this.#fail(kind);
-              return;
-            }
-            replay = next;
-            node = node[move]!;
-          }
-          if (!this.#terminal(replay)) replay = Rules.endTurn(replay) ?? '';
-          if (Object.keys(node).length || replay !== choice.resultingDfen) {
-            this.#fail(kind);
-            return;
-          }
+        if (!this.#retainedChoicesMatch(tree, root, set)) {
+          this.#fail(kind);
+          return;
         }
-        if (animation) {
-          const pending = this.#animation;
-          if (
-            !pending ||
-            !this.#roundId ||
-            !this.#resolvedRounds.has(this.#roundId) ||
-            !set.choices.some(
-              (choice) =>
-                choice.option === pending.choice.option &&
-                choice.resultingDfen === pending.choice.resultingDfen &&
-                choice.moves.join(',') === pending.choice.moves.join(','),
-            ) ||
-            pending.nextIndex !== this.#moves.length ||
-            pending.nextIndex >= pending.choice.moves.length ||
-            pending.choice.moves.slice(0, pending.nextIndex).join(',') !==
-              this.#moves.join(',')
-          ) {
-            this.#fail(kind);
-            return;
-          }
-          let replay = root;
-          for (const move of this.#moves)
-            replay = this.#apply(replay, move) ?? '';
-          if (replay !== this.#dfen) {
-            this.#fail(kind);
-            return;
-          }
-          this.#setPhase('chat-animation');
-          this.#announcement =
-            'Saved chat turn validated. Continuing from its next unplayed move.';
-          this.#changed();
-          this.#scheduleAnimation();
-        } else {
+        if (animation) this.#resumeRetainedAnimation(root, set);
+        else {
           if (this.#dfen !== root || this.#moves.length) {
             this.#fail(kind);
             return;
@@ -691,6 +645,66 @@ export class Game {
           this.#fail(kind);
         }
       });
+  }
+
+  #retainedChoicesMatch(
+    tree: MoveTree,
+    root: string,
+    set: RetainedCandidates,
+  ): boolean {
+    for (const choice of set.choices) {
+      let node = tree;
+      let replay = root;
+      for (const move of choice.moves) {
+        if (!Object.hasOwn(node, move)) {
+          return false;
+        }
+        const next = this.#apply(replay, move);
+        if (!next) {
+          return false;
+        }
+        replay = next;
+        node = node[move]!;
+      }
+      if (!this.#terminal(replay)) replay = Rules.endTurn(replay) ?? '';
+      if (Object.keys(node).length || replay !== choice.resultingDfen) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  #resumeRetainedAnimation(root: string, set: RetainedCandidates) {
+    const pending = this.#animation;
+    if (
+      !pending ||
+      !this.#roundId ||
+      !this.#resolvedRounds.has(this.#roundId) ||
+      !set.choices.some(
+        (choice) =>
+          choice.option === pending.choice.option &&
+          choice.resultingDfen === pending.choice.resultingDfen &&
+          choice.moves.join(',') === pending.choice.moves.join(','),
+      ) ||
+      pending.nextIndex !== this.#moves.length ||
+      pending.nextIndex >= pending.choice.moves.length ||
+      pending.choice.moves.slice(0, pending.nextIndex).join(',') !==
+        this.#moves.join(',')
+    ) {
+      this.#fail('animation');
+      return;
+    }
+    let replay = root;
+    for (const move of this.#moves) replay = this.#apply(replay, move) ?? '';
+    if (replay !== this.#dfen) {
+      this.#fail('animation');
+      return;
+    }
+    this.#setPhase('chat-animation');
+    this.#announcement =
+      'Saved chat turn validated. Continuing from its next unplayed move.';
+    this.#changed();
+    this.#scheduleAnimation();
   }
 
   #fail(kind: 'tree' | 'candidates' | 'choices' | 'animation') {
