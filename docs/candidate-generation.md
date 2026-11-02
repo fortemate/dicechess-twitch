@@ -3,8 +3,10 @@
 Issue:
 [fortemate/dicechess-twitch#3](https://github.com/fortemate/dicechess-twitch/issues/3).
 This host-side adapter is used by the local game machine to prepare frozen chat
-choices. The [vote coordinator](voting.md) consumes these frozen choices; real
-Twitch channel verification remains pending.
+choices. The [vote coordinator](voting.md) consumes these frozen choices. A
+[focused live rehearsal](../README.md#focused-live-tests--november-2-2026)
+verified real broadcaster authorization and complete-turn voting/execution;
+independent-viewer and broader live recovery checks remain pending.
 
 ## Integration decision
 

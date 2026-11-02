@@ -1,8 +1,9 @@
-# Proposed MVP architecture
+# MVP architecture
 
 Status: local transport, streamer gameplay, candidate preparation and game transition hooks
-implemented October 25, 2026. OAuth/EventSub code is locally fixture-tested; real Twitch
-verification remains follow-up work; [durable checkpoints/recovery](recovery.md) are implemented. [Host-owned previews](presentation.md)
+implemented October 25, 2026. OAuth/EventSub has local fixture coverage and a
+[focused November 2 live rehearsal](../README.md#focused-live-tests--november-2-2026).
+Independent-viewer and broader live failure-recovery checks remain follow-up work; [durable checkpoints/recovery](recovery.md) are implemented. [Host-owned previews](presentation.md)
 show approved sequences/final boards without changing game state. Host-owned
 [voting](voting.md) now counts normalized chat events and resolves full turns. The [MVP contract](mvp.md) is accepted.
 See [development](development.md) for verified commands and current limitations.
@@ -72,7 +73,8 @@ maximum-dice rules. Preview snapshots must not mutate the authoritative game.
 The [installed connection](twitch-connection.md) now implements a public-client device grant,
 startup/hourly validation, refresh and EventSub lifecycle with host-only authorization material.
 Operator activation details are separate from the public connection-health projection. Local
-fixtures cover these paths; actual broadcaster consent and real-channel evidence are still pending.
+fixtures cover these paths. Actual broadcaster consent, incoming chat and single-account
+voting/execution were verified separately; broader real-service recovery remains unverified.
 
 Use the installed-chatbot flow with broadcaster authorization and EventSub WebSocket reception for
 `channel.chat.message`. Twitch recommends WebSocket transport for locally installed applications;
