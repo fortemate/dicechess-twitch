@@ -36,6 +36,9 @@ test('one welcome creates one subscription; normalized chat keeps stable identit
     const first = chat('message-one');
     sockets[0]!.receive(first);
     sockets[0]!.receive(first);
+    const repeatedEnvelope = JSON.parse(first);
+    repeatedEnvelope.payload.event.message_id = 'different-message';
+    sockets[0]!.receive(JSON.stringify(repeatedEnvelope));
     sockets[0]!.receive(chat('message-one'));
     sockets[0]!.receive(chat('message-two'));
     sockets[0]!.receive(chat('wrong-channel', '200', '999'));
@@ -46,6 +49,87 @@ test('one welcome creates one subscription; normalized chat keeps stable identit
     assert.equal(messages[0]!.text, '!vote 2');
     assert.ok(Number.isFinite(messages[0]!.receivedAtMs));
     assert.notEqual(messages[0]!.eventId, messages[1]!.eventId);
+  } finally {
+    client.stop();
+  }
+});
+
+test('stopping during subscription ignores late completion or failure without admitting early chat', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  for (const outcome of ['complete', 'failure'] as const) {
+    const sockets: FakeSocket[] = [];
+    const health: TransportHealth[] = [];
+    const messages: ChatMessage[] = [];
+    const failures: string[] = [];
+    let settle!: () => void;
+    const client = new EventSubClient({
+      broadcasterId: '100',
+      socket: () => {
+        const socket = new FakeSocket();
+        sockets.push(socket);
+        return socket;
+      },
+      subscribe: () =>
+        new Promise<void>((resolve, reject) => {
+          settle = () => {
+            if (outcome === 'complete') resolve();
+            else reject(new Error('Fixture late subscription failure'));
+          };
+        }),
+      onChat: (message) => messages.push(message),
+      onHealth: (state) => health.push(state),
+      diagnostic: (reason) => failures.push(reason),
+    });
+    try {
+      client.start();
+      sockets[0]!.receive(welcome());
+      await flush();
+      sockets[0]!.receive(chat('before-subscription'));
+      assert.deepEqual(messages, []);
+      client.stop();
+      const stopped = [...health];
+      settle();
+      await flush();
+      context.mock.timers.tick(60000);
+      sockets[0]!.receive(chat('after-stop'));
+      assert.deepEqual(health, stopped);
+      assert.deepEqual(messages, []);
+      assert.deepEqual(failures, []);
+      assert.equal(sockets.length, 1);
+      assert.equal(sockets[0]!.closed, true);
+    } finally {
+      client.stop();
+    }
+  }
+});
+
+test('chat identities remain deduplicated until their retention window expires', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const socket = new FakeSocket();
+  const messages: ChatMessage[] = [];
+  const client = new EventSubClient({
+    broadcasterId: '100',
+    socket: () => socket,
+    subscribe: async () => {},
+    onChat: (message) => messages.push(message),
+    onHealth: () => {},
+  });
+  try {
+    client.start();
+    socket.receive(
+      packet('session_welcome', {
+        session: { id: 'long', keepalive_timeout_seconds: 600 },
+      }),
+    );
+    await flush();
+    socket.receive(chat('retained-identity'));
+    context.mock.timers.tick(599999);
+    socket.receive(chat('retained-identity'));
+    assert.equal(messages.length, 1);
+    context.mock.timers.tick(1);
+    socket.receive(chat('retained-identity'));
+    assert.equal(messages.length, 2);
+    assert.equal(socket.closed, false);
   } finally {
     client.stop();
   }

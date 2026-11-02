@@ -23,8 +23,8 @@ interface Options {
 }
 
 export class TwitchConnection {
-  #options: Options;
-  #auth: TwitchAuth;
+  readonly #options: Options;
+  readonly #auth: TwitchAuth;
   #transport: EventSubClient | undefined;
   #health: TransportHealth = { phase: 'offline', healthy: false };
   #received = 0;
@@ -60,13 +60,13 @@ export class TwitchConnection {
   }
   snapshot(): TwitchPublicState {
     const auth = this.#auth.state();
+    let phase: TwitchPublicState['phase'];
+    if (auth.phase === 'authorized')
+      phase =
+        this.#health.phase === 'offline' ? 'connecting' : this.#health.phase;
+    else phase = auth.phase;
     return {
-      phase:
-        auth.phase === 'authorized'
-          ? this.#health.phase === 'offline'
-            ? 'connecting'
-            : this.#health.phase
-          : auth.phase,
+      phase,
       healthy: auth.phase === 'authorized' && this.#health.healthy,
       channel: auth.identity?.login ?? null,
       receivedMessages: this.#received,

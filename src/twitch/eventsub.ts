@@ -59,13 +59,13 @@ interface Options {
 }
 
 export class EventSubClient {
-  #options: Options;
+  readonly #options: Options;
   #active: Link | undefined;
   #handoff: Link | undefined;
   #retry: ReturnType<typeof setTimeout> | undefined;
   #attempt = 0;
   #stopped = true;
-  #seen = new Map<string, number>();
+  readonly #seen = new Map<string, number>();
 
   constructor(options: Options) {
     this.#options = options;
@@ -125,37 +125,7 @@ export class EventSubClient {
     const packet = decodeEventSub(raw, this.#options.broadcasterId, Date.now());
     if (!packet) return;
     if (packet.type === 'welcome') {
-      if (link.welcomed) return;
-      link.welcomed = true;
-      link.keepaliveMs = packet.keepaliveSeconds * 1000;
-      clearTimeout(link.welcomeTimer);
-      link.welcomeTimer = undefined;
-      this.#keepalive(link);
-      if (link === this.#handoff) {
-        const previous = this.#active;
-        this.#active = link;
-        this.#handoff = undefined;
-        link.ready = true;
-        this.#attempt = 0;
-        if (previous) this.#close(previous);
-        this.#options.onHealth({ phase: 'connected', healthy: true });
-      } else {
-        void Promise.resolve()
-          .then(() =>
-            this.#options.subscribe(packet.sessionId, link.abort.signal),
-          )
-          .then(() => {
-            if (!this.#current(link)) return;
-            link.ready = true;
-            this.#attempt = 0;
-            this.#options.onHealth({ phase: 'connected', healthy: true });
-          })
-          .catch((error: unknown) => {
-            if (!this.#current(link)) return;
-            if (error instanceof AuthorizationRequired) this.stop('revoked');
-            else this.#lost('subscription-failed');
-          });
-      }
+      this.#welcome(link, packet.sessionId, packet.keepaliveSeconds);
       return;
     }
     if (!link.welcomed) return;
@@ -179,19 +149,52 @@ export class EventSubClient {
     }
     this.#keepalive(link);
     if (link !== this.#active || !link.ready) return;
+    this.#deliverChat(packet.event);
+  }
+
+  #welcome(link: Link, sessionId: string, keepaliveSeconds: number) {
+    if (link.welcomed) return;
+    link.welcomed = true;
+    link.keepaliveMs = keepaliveSeconds * 1000;
+    clearTimeout(link.welcomeTimer);
+    link.welcomeTimer = undefined;
+    this.#keepalive(link);
+    if (link === this.#handoff) {
+      const previous = this.#active;
+      this.#active = link;
+      this.#handoff = undefined;
+      link.ready = true;
+      this.#attempt = 0;
+      if (previous) this.#close(previous);
+      this.#options.onHealth({ phase: 'connected', healthy: true });
+    } else {
+      void Promise.resolve()
+        .then(() => this.#options.subscribe(sessionId, link.abort.signal))
+        .then(() => {
+          if (!this.#current(link)) return;
+          link.ready = true;
+          this.#attempt = 0;
+          this.#options.onHealth({ phase: 'connected', healthy: true });
+        })
+        .catch((error: unknown) => {
+          if (!this.#current(link)) return;
+          if (error instanceof AuthorizationRequired) this.stop('revoked');
+          else this.#lost('subscription-failed');
+        });
+    }
+  }
+
+  #deliverChat(message: ChatMessage) {
     const now = Date.now();
     for (const [key, expiresAt] of this.#seen)
       if (expiresAt <= now) this.#seen.delete(key);
-    const keys = [
-      `event:${packet.event.eventId}`,
-      `chat:${packet.event.messageId}`,
-    ];
+    const keys = [`event:${message.eventId}`, `chat:${message.messageId}`];
     if (keys.some((key) => this.#seen.has(key))) return;
     for (const key of keys) this.#seen.set(key, now + 600000);
     while (this.#seen.size > 20000)
       this.#seen.delete(this.#seen.keys().next().value!);
     try {
-      this.#options.onChat(packet.event);
+      this.#options.onChat(message);
     } catch {
       this.#lost('chat-handler-failed');
     }
