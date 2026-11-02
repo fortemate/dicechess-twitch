@@ -23,7 +23,7 @@ interface SessionOptions extends Omit<GameOptions, 'changed' | 'sessionId'> {
 }
 
 export class Session {
-  #state = {
+  readonly #state = {
     sessionId: randomUUID(),
     revision: 0,
     controlRevision: 0,
@@ -36,10 +36,10 @@ export class Session {
   readonly voting: VotingCoordinator;
   readonly preview: Preview;
   #decisions: VoteDecision[] = [];
-  #chatListeners = new Set<(message: ChatMessage) => void>();
-  #store: CheckpointStore | undefined;
+  readonly #chatListeners = new Set<(message: ChatMessage) => void>();
+  readonly #store: CheckpointStore | undefined;
   #storageError = false;
-  #restored = false;
+  readonly #restored: boolean = false;
   #saving = false;
   #lastSaved = '';
   #lastCheckpoint: SessionCheckpoint | undefined;
@@ -90,15 +90,12 @@ export class Session {
       changed: () => this.#changed(),
       ...(previewStepMs !== undefined ? { stepMs: previewStepMs } : {}),
     });
+    const durationMs = saved ? saved.voteDurationMs : voteDurationMs;
     this.voting = new VotingCoordinator({
       game: this.game,
       healthy: () => this.twitch.snapshot().healthy,
       changed: () => this.#changed(),
-      ...(saved
-        ? { durationMs: saved.voteDurationMs }
-        : voteDurationMs !== undefined
-          ? { durationMs: voteDurationMs }
-          : {}),
+      ...(durationMs !== undefined ? { durationMs } : {}),
       previewReady: (roundId) => this.preview.ready(roundId),
       decision: (decision) => {
         this.#decisions.push(decision);

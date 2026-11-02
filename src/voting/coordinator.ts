@@ -14,7 +14,7 @@ interface Options {
 
 /** The host alone opens/closes polls and commits their resolved full turn. */
 export class VotingCoordinator {
-  #options: Options;
+  readonly #options: Options;
   #poll: Poll | undefined;
   #durationMs: number;
   #lastDecision: VoteDecision | null = null;
@@ -122,7 +122,7 @@ export class VotingCoordinator {
   }
   #close(now: number) {
     const poll = this.#poll;
-    if (!poll || poll.phase !== 'open' || now < poll.closesAtMs) return;
+    if (poll?.phase !== 'open' || now < poll.closesAtMs) return;
     const decision = poll.close(now);
     if (decision) {
       this.#lastDecision = decision;
