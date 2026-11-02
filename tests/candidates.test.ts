@@ -5,13 +5,18 @@ import { test } from 'node:test';
 import { DiceChess } from '@fortemate/dicechess-engine';
 import type { MoveTree } from '@fortemate/dicechess-engine';
 import { generateCandidates } from '../src/engine/generator.ts';
-import { enumerateTurns, applyUci } from '../src/engine/search.ts';
+import {
+  enumerateTurns,
+  applyUci,
+  searchCandidates,
+} from '../src/engine/search.ts';
 import { ruleStateKey, selectTurns, shuffle } from '../src/engine/selection.ts';
 import { candidatePolicy } from '../src/engine/types.ts';
 import type {
   CandidateRequest,
   CandidateResult,
   ScoredTurn,
+  WorkerProgress,
 } from '../src/engine/types.ts';
 import { startHost } from '../src/host/server.ts';
 import { fixtures } from './candidate-fixtures.ts';
@@ -140,6 +145,69 @@ test('independent micro-move reorderings collapse to one card despite diagnostic
     all.turns.filter((turn) => turn.ruleKey === ruleStateKey(a)).length,
     1,
   );
+});
+
+test('a traversal cap retains the preferred complete path; stopping mid-turn never emits a partial choice', () => {
+  const all = enumerateTurns(fixtures.opening, candidatePolicy.pathLimit);
+  const preferred = all.turns.at(-1)!;
+  const limited = enumerateTurns(
+    fixtures.opening,
+    1,
+    () => false,
+    preferred.moves,
+  );
+  assert.equal(limited.paths, 1);
+  assert.equal(limited.limited, true);
+  assert.deepEqual(limited.turns, [preferred]);
+  let probes = 0;
+  const interrupted = enumerateTurns(
+    fixtures.opening,
+    candidatePolicy.pathLimit,
+    () => ++probes === preferred.moves.length,
+    preferred.moves,
+  );
+  assert.equal(interrupted.paths, 0);
+  assert.equal(interrupted.limited, true);
+  assert.deepEqual(interrupted.turns, []);
+});
+
+test('scoring bypasses rollouts after king capture and rejects incomplete or invalid equity estimates', (context) => {
+  const valid = {
+    whiteWin: 0.5,
+    blackWin: 0.25,
+    undecided: 0.25,
+    rollouts: candidatePolicy.rolloutCount,
+    standardError: 0,
+    varianceReductionVsVanilla: 1,
+  };
+  let estimate = valid;
+  const probe = context.mock.method(
+    DiceChess,
+    'estimateEquity',
+    () => estimate,
+  );
+  const reports: WorkerProgress[] = [];
+  searchCandidates(request(fixtures.tactical), candidatePolicy, (report) =>
+    reports.push(report),
+  );
+  assert.equal(probe.mock.callCount(), 0);
+  assert.equal(reports.at(-1)!.status, 'ready');
+  assert.equal(reports.at(-1)!.scored.length, 1);
+  assert.equal(reports.at(-1)!.scored[0]!.utility, 1);
+  for (const [invalid, message] of [
+    [{ ...valid, rollouts: valid.rollouts - 1 }, 'invalid equity estimate'],
+    [{ ...valid, whiteWin: NaN }, 'Invalid candidate utility'],
+    [{ ...valid, whiteWin: Infinity }, 'Invalid candidate utility'],
+    [{ ...valid, whiteWin: -1 }, 'Invalid candidate utility'],
+    [{ ...valid, whiteWin: 2 }, 'Invalid candidate utility'],
+  ] as const) {
+    estimate = invalid;
+    assert.throws(
+      () => searchCandidates(request(fixtures.one), candidatePolicy, () => {}),
+      new RegExp(message),
+    );
+  }
+  assert.equal(probe.mock.callCount(), 5);
 });
 
 test('rule-state key preserves orientation, side, castling, en passant and remaining dice', () => {
