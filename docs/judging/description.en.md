@@ -1,57 +1,99 @@
-# Twitch Plays Dice Chess — English description draft
+# Twitch Plays Dice Chess
 
-## The experience
+## One streamer. One chat. Three complete plans.
 
-Twitch Plays Dice Chess gives a streamer and their chat one shared board. The
-streamer rolls three dice and freely chooses a complete turn permitted by the
-Dice Chess rules. On the chat side, the engine prepares up to three distinct
-complete-turn choices from one frozen roll. Viewers see numbered final-position
-boards, move/capture summaries and an automatic sequence preview, then choose
-with `!vote 1`, `!vote 2` or `!vote 3` in Twitch chat.
+Twitch Plays Dice Chess turns chat into the streamer's opponent. In the demo, a
+real Twitch vote selects a plan that sends a knight across the board and
+captures the streamer's queen. The host executes the whole plan, then hands the
+board back to the streamer.
 
-Each viewer has one equal-weight vote and can change it until the host closes
-the poll. The selected sequence plays automatically and control returns to the
-streamer. A roll with no legal action forces a visible pass. One retained choice
-is explained and auto-played after preview; no alternatives are fabricated. If
-nobody votes, the game visibly waits for the operator to extend the poll.
+Dice Chess uses familiar pieces, but dice specify which piece types can move.
+One turn can contain several moves; capturing the opposing king wins. The
+streamer chooses legal moves freely. Chat chooses between up to three complete
+plans from the same roll.
 
-## How it is built
+## Why complete plans?
 
-A local TypeScript/Node.js host owns the board, dice, frozen candidates, poll
-deadline and execution cursor. An operator page controls play; a separate
-read-only page is captured by OBS. Twitch's installed-broadcaster device flow
-and EventSub WebSocket supply normalized chat. Authorization stays in host
-memory, outside broadcast state and durable game files.
+Voting on the first move of a multi-move turn hides what happens next. Counting
+free-form suggestions also makes it hard for a viewer to know what the group is
+actually choosing.
 
-The host rejects duplicate/stale round results and checkpoints committed
-transitions. Restart restores the game paused with its original roll, choices
-and next unplayed action. A lost chat round clears partial votes and reopens
-under a new identity after health recovery and explicit resume. The candidate
-search is bounded and uses a common public equity estimate; it does not claim to
-find the globally best three turns.
+Each option therefore shows its final-position board, numbered move list and
+capture summary. Animated previews play the alternatives and restore the
+original board before voting opens. Viewers can compare consequences without
+entering chess notation. The design goal is a decision that is easy to follow
+and fun to watch; audience engagement has not yet been measured.
 
-## What Codex contributed
+## What streamers and viewers do
 
-The owner directed the product scope and rules boundaries in a primary Codex
-Desktop thread. Codex inspected the public engine interface and implemented the
-candidate adapter/workers, authoritative game, installed Twitch transport,
-voting, OBS presentation, durable recovery and focused Node/browser checks. It
-also repeated clean-checkout verification and a built-process SIGKILL recovery
-rehearsal. Human PR review and real-channel acceptance remain owner steps. Codex
-is the development tool; gameplay does not invoke an LLM service or require an
+The streamer runs the local application, connects their Twitch channel and adds
+a read-only browser scene to OBS. Viewers vote in the actual channel with
+`!vote 1`, `!vote 2` or `!vote 3`. Each viewer gets one equal vote and can
+change it until the deadline. The winning complete turn plays automatically.
+
+No votes means an explicit operator extension, not an invented audience choice.
+A roll with no legal action passes visibly. One retained meaningful plan plays
+automatically after preview; the application never pads the ballot with fake
+alternatives. This is a local streaming application, not a Twitch Extension.
+
+## How I built it with Codex
+
+I directed product scope, reviewed the results and tested the broadcaster
+workflow. In the primary Codex chat, we built the candidate adapter, session
+host, Twitch authorization/EventSub transport, vote collection, previews, OBS
+scene and durable recovery.
+
+The difficult parts were preserving complete-turn legality, deduplicating
+resulting rule states instead of reordered move lists, and keeping one host in
+charge of timers and execution. Real rehearsal also exposed connection timing
+and operator-control issues. Codex helped trace chat events, fix those paths and
+run the checks. The video includes genuine later Codex review/test work, rather
+than a recreated implementation scene.
+
+Codex is the development tool. Gameplay does not call an LLM or require an
 OpenAI API key.
 
-## Existing foundation and current evidence
+## Implementation and existing foundation
 
-The public Dice Chess Engine 0.14.9 is an existing AGPL-3.0-only dependency. Its
-rules/search are not claimed as new hackathon work. The streamer/chat
-application, full-turn candidate selection, presentation, integration and
-recovery were created in this repository on October 25, 2026. Assets are
-CSS/text and system-font chess glyphs; no TV game assets, voices or music were
-copied.
+TypeScript on Node.js owns the board, frozen roll, candidates, preview cursor,
+voting deadline and execution. Workers use the existing public
+`@fortemate/dicechess-engine` 0.14.9 for rules and search. That engine is not
+claimed as new hackathon work; this application's Twitch interaction,
+presentation and session orchestration were built during the event.
 
-At preparation, a clean local checkout passed 60 Node tests and 11 Chromium
-checks, including explicit Twitch fixtures. **Real broadcaster authorization,
-human-viewer full-game/OBS timing and the required demo footage are still
-unverified.** Keep that distinction until the owner records and reviews the real
-rehearsal; no audience-engagement or live-broadcast result is claimed.
+Twitch public-client device authorization and an EventSub WebSocket subscription
+to `channel.chat.message` supply actual chat. Access is chat-read only. OAuth
+material stays in host memory, outside broadcast snapshots and saved games. OBS
+receives a separate read-only scene. Restart restores saved play paused;
+interrupted polls discard partial votes and require explicit resumption.
+
+Source is AGPL-3.0-only. The cburnett SVG pieces retain GPL-3.0-or-later
+notices; Fortemate branding has a separate bundled notice. Provenance is
+documented in the public repository.
+
+## Try it and check the evidence
+
+Watch the [English 2:39 demo](https://youtu.be/sJgxRbO8JU0), then follow the
+[public repository's run guide](https://github.com/fortemate/dicechess-twitch/blob/main/docs/judging/run.md).
+The demonstrated application revision is
+`d055ab79248536fd2be01b05e4973c6b2011f5cc`. Use Node.js 24.22.1 and npm 11.19.1.
+Local play and previews need no Twitch credentials; connecting your own channel
+requires registering a public Twitch application and personally approving
+read-only access. No private packages or models are required.
+
+A clean public clone passed 80 Node tests, 14 Chromium scenarios and two
+complete games with real engine workers and fixture Twitch traffic. Real
+rehearsal separately verified broadcaster authorization, incoming chat, an
+accepted vote, automatic complete-turn execution and OBS output in Twitch
+playback. In the demo, option 2 wins 0–1–0: the knight moves f5–e3–d1, capturing
+the queen, and the king moves d7–c8.
+
+## Limits and next steps
+
+Live evidence is a single-account rehearsal, not independent multi-viewer play.
+Fixture tests cover vote changes, duplicate delivery, deadlines and recovery;
+broader real-service failure tests, load and community impact remain unverified.
+Candidate search is bounded and does not promise the globally best three plans.
+Stream delay varies and late untagged commands cannot identify an earlier
+intended round. The application supports one local game/channel; hosted
+multi-channel service and click-to-vote Extensions are future work.
