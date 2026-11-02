@@ -9,6 +9,59 @@ const names: Record<string, string> = {
   p: 'pawn',
 };
 
+interface BoardOptions {
+  flipped?: boolean;
+  click?: (square: string) => void;
+  selected?: string;
+  actions?: readonly string[];
+  disabled?: boolean;
+  marks?: readonly string[];
+  coordinates?: boolean;
+}
+
+function squareLabel(square: string, piece: string) {
+  if (piece === '.') return `${square} empty`;
+  const color = piece === piece.toUpperCase() ? 'white' : 'black';
+  return `${square} ${color} ${names[piece.toLowerCase()]}`;
+}
+
+function isTarget(square: string, options: BoardOptions) {
+  const selected = options.selected;
+  if (!selected) return false;
+  return options.actions?.some(
+    (uci) => uci.startsWith(selected) && uci.slice(2, 4) === square,
+  );
+}
+
+function appendCoordinates(cell: HTMLElement, square: string, visible: number) {
+  if (visible >= 56) cell.append(coordinate(square[0]!, 'file'));
+  if (visible % 8 === 0) cell.append(coordinate(square[1]!, 'rank'));
+}
+
+function boardCell(squares: string, visible: number, options: BoardOptions) {
+  const index = options.flipped ? 63 - visible : visible;
+  const row = Math.floor(index / 8);
+  const file = index % 8;
+  const square = `${String.fromCodePoint(97 + file)}${8 - row}`;
+  const piece = squares[index] ?? '.';
+  const cell = document.createElement(options.click ? 'button' : 'div');
+  cell.className = `square ${(row + file) % 2 ? 'dark' : 'light'}`;
+  if (options.selected === square) cell.classList.add('selected');
+  if (isTarget(square, options)) cell.classList.add('target');
+  if (options.marks?.includes(square)) cell.classList.add('trace');
+  cell.dataset.square = square;
+  const image = pieceImage(piece);
+  if (image) cell.append(image);
+  if (options.coordinates !== false) appendCoordinates(cell, square, visible);
+  cell.setAttribute('aria-label', squareLabel(square, piece));
+  if (cell instanceof HTMLButtonElement) {
+    cell.type = 'button';
+    cell.disabled = options.disabled ?? false;
+    cell.onclick = () => options.click?.(square);
+  }
+  return cell;
+}
+
 /**
  * Render host-validated DFEN in the requested orientation, retaining square focus.
  * A click callback enables operator input; omitting it produces a read-only board.
@@ -17,15 +70,7 @@ const names: Record<string, string> = {
 export function renderBoard(
   container: HTMLElement,
   dfen: string,
-  options: {
-    flipped?: boolean;
-    click?: (square: string) => void;
-    selected?: string;
-    actions?: readonly string[];
-    disabled?: boolean;
-    marks?: readonly string[];
-    coordinates?: boolean;
-  } = {},
+  options: BoardOptions = {},
 ) {
   const placement = dfen.split(' ')[0]!;
   container.dataset.dfen = dfen;
@@ -36,41 +81,11 @@ export function renderBoard(
     document.activeElement instanceof HTMLElement
       ? document.activeElement.dataset.square
       : undefined;
-  const children: HTMLElement[] = [];
-  for (let visible = 0; visible < 64; visible++) {
-    const index = options.flipped ? 63 - visible : visible;
-    const row = Math.floor(index / 8);
-    const file = index % 8;
-    const square = `${String.fromCharCode(97 + file)}${8 - row}`;
-    const piece = squares[index] ?? '.';
-    const cell = document.createElement(options.click ? 'button' : 'div');
-    const target =
-      options.selected &&
-      options.actions?.some(
-        (uci) =>
-          uci.startsWith(options.selected!) && uci.slice(2, 4) === square,
-      );
-    cell.className = `square ${(row + file) % 2 ? 'dark' : 'light'}${options.selected === square ? ' selected' : ''}${target ? ' target' : ''}`;
-    if (options.marks?.includes(square)) cell.classList.add('trace');
-    cell.dataset.square = square;
-    const image = pieceImage(piece);
-    if (image) cell.append(image);
-    if (options.coordinates !== false) {
-      if (visible >= 56) cell.append(coordinate(square[0]!, 'file'));
-      if (visible % 8 === 0) cell.append(coordinate(square[1]!, 'rank'));
-    }
-    cell.setAttribute(
-      'aria-label',
-      `${square}${piece === '.' ? ' empty' : ` ${piece === piece.toUpperCase() ? 'white' : 'black'} ${names[piece.toLowerCase()]}`}`,
-    );
-    if (cell instanceof HTMLButtonElement) {
-      cell.type = 'button';
-      cell.disabled = options.disabled ?? false;
-      cell.onclick = () => options.click?.(square);
-    }
-    children.push(cell);
-  }
-  container.replaceChildren(...children);
+  container.replaceChildren(
+    ...Array.from({ length: 64 }, (_, visible) =>
+      boardCell(squares, visible, options),
+    ),
+  );
   if (focused)
     container
       .querySelector<HTMLElement>(`[data-square="${focused}"]`)

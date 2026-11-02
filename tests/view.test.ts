@@ -147,6 +147,74 @@ test('neutral card labels follow host preview/decision state and transport healt
       doc.querySelector('.chosen .choice-state')?.textContent,
       'Chat choice',
     );
+    let revision = chosen.revision;
+    for (const [phase, healthy, expected] of [
+      ['open', true, 'Vote now: !vote 1–3 · 2s · 2 voters'],
+      ['paused', true, 'Vote paused · 2s saved · 2 voters'],
+      [
+        'waiting',
+        true,
+        'No votes received. Waiting for the operator to extend this vote.',
+      ],
+      [
+        'preview',
+        true,
+        'Review the frozen choices. Voting opens after preview.',
+      ],
+      [
+        'preview',
+        false,
+        'Choices ready. Connect Twitch before voting can open.',
+      ],
+      ['idle', false, 'No vote open'],
+    ] as const) {
+      const status = structuredClone(chosen);
+      status.revision = ++revision;
+      status.voting.phase = phase;
+      status.voting.remainingMs = 1501;
+      status.voting.totalVoters = 2;
+      status.twitch.healthy = healthy;
+      stream.emit(status);
+      assert.equal(doc.getElementById('vote-status')!.textContent, expected);
+    }
+    const choice = chosen.game.choices[0]!;
+    for (const [reason, option, detail] of [
+      ['forced-pass', null, 'forced pass — no legal move for that roll'],
+      [
+        'single-choice',
+        1,
+        `option 1 · auto-played the sole retained choice · ${choice.moves.join(' · ')}`,
+      ],
+      ['streamer', null, choice.moves.join(' · ')],
+    ] as const) {
+      const turn = structuredClone(chosen);
+      turn.revision = ++revision;
+      turn.game.lastTurn = {
+        side: turn.game.streamerColor,
+        rolledDfen: turn.game.rolledDfen!,
+        moves: choice.moves,
+        resultingDfen: choice.resultingDfen,
+        reason,
+        roundId: turn.game.roundId,
+        option,
+      };
+      stream.emit(turn);
+      assert.equal(
+        doc.getElementById('last-turn')!.textContent,
+        `Streamer: ${detail}`,
+      );
+    }
+    const won = structuredClone(chosen);
+    won.revision = ++revision;
+    won.game.phase = 'game-over';
+    won.game.winner = won.game.streamerColor;
+    stream.emit(won);
+    assert.equal(doc.getElementById('side')!.textContent, 'Streamer wins');
+    const idle = structuredClone(chosen);
+    idle.revision = ++revision;
+    idle.game.phase = 'idle';
+    stream.emit(idle);
+    assert.equal(doc.getElementById('side')!.textContent, 'No game started');
     assert.deepEqual(session.snapshot(), authoritative);
     dom.window.dispatchEvent(new dom.window.Event('pagehide'));
     assert.equal(stream.closed, true);
