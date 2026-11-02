@@ -1,5 +1,7 @@
 # Twitch Plays Dice Chess
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=fortemate_dicechess-twitch&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=fortemate_dicechess-twitch)
+
 A streamer plays Dice Chess freely; their Twitch chat chooses between up to
 three engine-generated complete turns. Built with OpenAI Codex for the
 [Codex x TwitchCon Hackathon](https://twitchcon-codex.devpost.com/).

@@ -18,11 +18,39 @@ const maxBytes = 2 * 1024 * 1024;
 const missing = (error: unknown) =>
   (error as NodeJS.ErrnoException)?.code === 'ENOENT';
 
+function removeStaleLock(lock: string): boolean {
+  try {
+    const pid = lockOwner(lock);
+    try {
+      process.kill(pid, 0);
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') {
+        unlinkSync(lock);
+        return true;
+      }
+    }
+  } catch {
+    /* Unknown ownership is never overwritten. */
+  }
+  return false;
+}
+
+function lockOwner(lock: string): number {
+  const stat = lstatSync(lock);
+  if (!stat.isFile() || stat.size > 1024)
+    throw new Error('Invalid local session lock');
+  const saved: unknown = JSON.parse(readFileSync(lock, 'utf8'));
+  const pid = (saved as { pid?: unknown })?.pid;
+  if (!Number.isSafeInteger(pid) || (pid as number) <= 0)
+    throw new Error('Invalid local session lock owner');
+  return pid as number;
+}
+
 /** Atomic local checkpoints plus one process owner. No credential persistence. */
 export class FileStore implements CheckpointStore {
-  #file: string;
-  #lock: string;
-  #nonce = randomBytes(16).toString('hex');
+  readonly #file: string;
+  readonly #lock: string;
+  readonly #nonce = randomBytes(16).toString('hex');
   #closed = false;
   constructor(file: string) {
     this.#file = file;
@@ -40,45 +68,31 @@ export class FileStore implements CheckpointStore {
       } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST')
           throw new Error('Local session storage unavailable');
-        try {
-          const stat = lstatSync(this.#lock);
-          if (!stat.isFile() || stat.size > 1024) throw new Error();
-          const saved: unknown = JSON.parse(readFileSync(this.#lock, 'utf8'));
-          const pid = (saved as { pid?: unknown })?.pid;
-          if (!Number.isSafeInteger(pid) || (pid as number) <= 0)
-            throw new Error();
-          try {
-            process.kill(pid as number, 0);
-          } catch (status: unknown) {
-            if ((status as NodeJS.ErrnoException).code === 'ESRCH') {
-              unlinkSync(this.#lock);
-              continue;
-            }
-          }
-        } catch {
-          /* Unknown ownership is never overwritten. */
-        }
+        if (removeStaleLock(this.#lock)) continue;
         throw new Error('Local session storage is already in use');
       }
-      try {
-        writeFileSync(
-          descriptor,
-          JSON.stringify({ pid: process.pid, nonce: this.#nonce }),
-        );
-        fsyncSync(descriptor);
-      } catch {
-        try {
-          unlinkSync(this.#lock);
-        } catch {
-          /* Preserve the original failure. */
-        }
-        throw new Error('Local session lock unavailable');
-      } finally {
-        closeSync(descriptor);
-      }
+      this.#writeLock(descriptor);
       return;
     }
     throw new Error('Local session lock unavailable');
+  }
+  #writeLock(descriptor: number) {
+    try {
+      writeFileSync(
+        descriptor,
+        JSON.stringify({ pid: process.pid, nonce: this.#nonce }),
+      );
+      fsyncSync(descriptor);
+    } catch {
+      try {
+        unlinkSync(this.#lock);
+      } catch {
+        /* Preserve the original failure. */
+      }
+      throw new Error('Local session lock unavailable');
+    } finally {
+      closeSync(descriptor);
+    }
   }
   load(): SessionCheckpoint | undefined {
     if (this.#closed) throw new Error('Local session storage is closed');

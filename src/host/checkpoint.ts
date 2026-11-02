@@ -127,7 +127,7 @@ function apply(root: string, sequence: readonly string[], end = false): string {
   }
   return next;
 }
-const phases = [
+const phases = new Set([
   'idle',
   'streamer-roll',
   'streamer-preparing',
@@ -140,7 +140,7 @@ const phases = [
   'chat-animation',
   'paused',
   'game-over',
-];
+]);
 const base = (position: string) => position.split(' ').slice(0, 6).join(' ');
 
 function game(value: unknown): asserts value is SavedGame {
@@ -155,12 +155,15 @@ function game(value: unknown): asserts value is SavedGame {
       dfen(value.dfen),
   );
   ensure(
-    integer(value.positionVersion) && phases.includes(String(value.phase)),
+    integer(value.positionVersion) &&
+      typeof value.phase === 'string' &&
+      phases.has(value.phase),
   );
   ensure(
     value.resumePhase === null ||
-      (phases.includes(String(value.resumePhase)) &&
-        !['paused', 'idle', 'game-over'].includes(String(value.resumePhase))),
+      (typeof value.resumePhase === 'string' &&
+        phases.has(value.resumePhase) &&
+        !['paused', 'idle', 'game-over'].includes(value.resumePhase)),
   );
   ensure((value.phase === 'paused') === (value.resumePhase !== null));
   ensure(
@@ -183,9 +186,32 @@ function game(value: unknown): asserts value is SavedGame {
       value.resolvedRounds.every(id) &&
       new Set(value.resolvedRounds).size === value.resolvedRounds.length,
   );
-  ensure(Array.isArray(value.history) && value.history.length <= 10000);
-  let prior = value.startingDfen;
-  for (const record of value.history) {
+  const prior = validateHistory(
+    value.history,
+    value.startingDfen,
+    value.streamerColor,
+  );
+  validateCandidates(value, value.positionVersion);
+  validateAnimation(
+    value.animation,
+    value.moves,
+    value.roundId,
+    value.resolvedRounds,
+  );
+  // Nested records have been validated before checking cross-field invariants.
+  const saved = value as unknown as SavedGame;
+  validatePhaseState(saved);
+  validatePosition(saved, prior);
+}
+
+function validateHistory(
+  records: unknown,
+  startingDfen: string,
+  streamerColor: unknown,
+): string {
+  ensure(Array.isArray(records) && records.length <= 10000);
+  let prior = startingDfen;
+  for (const record of records) {
     object(record, 'side,rolledDfen,moves,resultingDfen,reason,roundId,option');
     ensure(
       dfen(record.rolledDfen) &&
@@ -212,12 +238,19 @@ function game(value: unknown): asserts value is SavedGame {
       (record.reason === 'chat-choice' || record.reason === 'single-choice') ===
         (record.option !== null),
     );
-    ensure((record.side === value.streamerColor) === (record.roundId === null));
+    ensure((record.side === streamerColor) === (record.roundId === null));
     ensure(
       apply(record.rolledDfen, record.moves, true) === record.resultingDfen,
     );
     prior = record.resultingDfen;
   }
+  return prior;
+}
+
+function validateCandidates(
+  value: Record<string, unknown>,
+  positionVersion: number,
+) {
   if (value.candidates !== null) {
     const set = value.candidates;
     object(set, 'request,status,reason,choices');
@@ -227,7 +260,7 @@ function game(value: unknown): asserts value is SavedGame {
         set.request.roundId === value.roundId &&
         set.request.rolledDfen === value.rolledDfen &&
         integer(set.request.positionVersion) &&
-        set.request.positionVersion <= value.positionVersion &&
+        set.request.positionVersion <= positionVersion &&
         integer(set.request.seed, 2147483647),
     );
     ensure(
@@ -249,22 +282,31 @@ function game(value: unknown): asserts value is SavedGame {
       );
     }
   }
-  if (value.animation !== null) {
-    object(value.animation, 'choice,reason,nextIndex');
-    choice(value.animation.choice);
+}
+
+function validateAnimation(
+  value: unknown,
+  prefix: readonly string[],
+  roundId: unknown,
+  resolvedRounds: readonly string[],
+) {
+  if (value !== null) {
+    object(value, 'choice,reason,nextIndex');
+    choice(value.choice);
     ensure(
-      ['single-choice', 'chat-choice'].includes(
-        String(value.animation.reason),
-      ) && integer(value.animation.nextIndex, 2),
+      ['single-choice', 'chat-choice'].includes(String(value.reason)) &&
+        integer(value.nextIndex, 2),
     );
-    const pending = value.animation.choice as { moves: string[] };
+    const pending = value.choice as { moves: string[] };
     ensure(
-      value.animation.nextIndex < pending.moves.length &&
-        value.moves.join(',') ===
-          pending.moves.slice(0, value.animation.nextIndex).join(','),
+      value.nextIndex < pending.moves.length &&
+        prefix.join(',') === pending.moves.slice(0, value.nextIndex).join(','),
     );
-    ensure(id(value.roundId) && value.resolvedRounds.includes(value.roundId));
+    ensure(id(roundId) && resolvedRounds.includes(roundId));
   }
+}
+
+function validatePhaseState(value: SavedGame) {
   const effective = value.phase === 'paused' ? value.resumePhase : value.phase;
   if (effective === 'idle')
     ensure(
@@ -285,13 +327,34 @@ function game(value: unknown): asserts value is SavedGame {
         !value.resolvedRounds.includes(value.roundId),
     );
   ensure(effective === 'idle' ? value.gameId === null : id(value.gameId));
+  if (
+    ['preview', 'voting', 'chat-animation', 'resolving'].includes(
+      String(effective),
+    )
+  )
+    ensure(
+      value.candidates !== null &&
+        value.roundId !== null &&
+        value.rolledDfen !== null,
+    );
+  if (effective === 'chat-animation' || effective === 'resolving')
+    ensure(value.animation !== null);
+  if (
+    ['streamer-preparing', 'streamer-turn', 'chat-preparing'].includes(
+      String(effective),
+    )
+  )
+    ensure(value.rolledDfen !== null);
+}
+
+function validatePosition(value: SavedGame, prior: string) {
+  const effective = value.phase === 'paused' ? value.resumePhase : value.phase;
   if (effective === 'game-over') {
     const last = value.history.at(-1) as
       | { resultingDfen: string; rolledDfen: string; moves: string[] }
       | undefined;
     ensure(
-      last &&
-        value.dfen === last.resultingDfen &&
+      value.dfen === last?.resultingDfen &&
         value.rolledDfen === last.rolledDfen &&
         value.moves.join(',') === last.moves.join(','),
     );
@@ -312,24 +375,6 @@ function game(value: unknown): asserts value is SavedGame {
       );
     }
   }
-  if (
-    ['preview', 'voting', 'chat-animation', 'resolving'].includes(
-      String(effective),
-    )
-  )
-    ensure(
-      value.candidates !== null &&
-        value.roundId !== null &&
-        value.rolledDfen !== null,
-    );
-  if (effective === 'chat-animation' || effective === 'resolving')
-    ensure(value.animation !== null);
-  if (
-    ['streamer-preparing', 'streamer-turn', 'chat-preparing'].includes(
-      String(effective),
-    )
-  )
-    ensure(value.rolledDfen !== null);
 }
 
 function decision(value: unknown) {
