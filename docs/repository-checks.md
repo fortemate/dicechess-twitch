@@ -101,7 +101,7 @@ confirm LCOV import and PR decoration at its exact head.
 `CODEOWNERS` names `@rabestro`. Native Issue forms provide the required
 structure and type, and the PR template records verification/limits. Maintainers
 still assign Issues and manage organization Project fields; the templates grant
-no permissions and do not trigger Jules.
+no permissions and do not authorize external agent dispatch.
 
 Review branch rules after the first successful runs. Require application checks
 and dependency review, retain owner approval and block force pushes/deletion of
