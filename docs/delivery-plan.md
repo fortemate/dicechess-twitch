@@ -38,7 +38,7 @@ Planning/bootstrap documentation: [fortemate/dicechess-twitch#12](https://github
 Every task is in Fortemate Engineering with native Issue Type, organization Priority, Execution
 tier, workflow Status, milestone where applicable and native parent/dependency relationships.
 Ready means sufficiently defined and available to start. Blocked successors stay in Backlog.
-No Jules label or execution dispatch is authorized by this plan.
+No external agent execution dispatch is authorized by this plan.
 
 ## Critical path and scope control
 
