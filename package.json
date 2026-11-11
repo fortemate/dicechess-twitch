@@ -25,7 +25,7 @@
     "rehearse:full-game": "npm run build && node --test tests/rehearsal/full-game.test.ts"
   },
   "dependencies": {
-    "@fortemate/dicechess-engine": "0.15.0"
+    "@fortemate/dicechess-engine": "0.18.2"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
