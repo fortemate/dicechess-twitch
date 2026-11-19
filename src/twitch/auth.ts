@@ -25,6 +25,49 @@ interface Options {
   fetcher?: typeof fetch;
 }
 
+interface DeviceAuthorization extends Record<string, unknown> {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
+
+function assertDeviceAuthorization(
+  body: Record<string, unknown>,
+): asserts body is DeviceAuthorization {
+  if (
+    !text(body.device_code, 4096) ||
+    !text(body.user_code, 32) ||
+    !text(body.verification_uri, 2048) ||
+    typeof body.expires_in !== 'number' ||
+    body.expires_in <= 0 ||
+    body.expires_in > 86400 ||
+    typeof body.interval !== 'number' ||
+    !Number.isInteger(body.interval) ||
+    body.interval < 1 ||
+    body.interval > 60
+  )
+    throw new Error('Invalid device authorization');
+}
+
+function activationUri(value: string): URL {
+  const uri = new URL(value);
+  if (
+    uri.protocol !== 'https:' ||
+    !['www.twitch.tv', 'twitch.tv'].includes(uri.hostname) ||
+    uri.pathname !== '/activate' ||
+    uri.username ||
+    uri.password ||
+    (uri.port && uri.port !== '443')
+  )
+    throw new Error('Invalid activation destination');
+  // Twitch can omit the public-client mode from verification_uri. Without
+  // it, the activation page rejects an otherwise matching device user code.
+  uri.searchParams.set('public', 'true');
+  return uri;
+}
+
 function wait(ms: number, signal: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
     const cancel = () => {
@@ -43,7 +86,7 @@ function wait(ms: number, signal: AbortSignal): Promise<boolean> {
 
 /** Runtime-only OAuth material. No method returns an access/refresh/device token. */
 export class TwitchAuth {
-  #options: Options;
+  readonly #options: Options;
   #clientId: string | undefined;
   #phase: AuthPhase;
   #tokens: Tokens | undefined;
@@ -115,9 +158,10 @@ export class TwitchAuth {
   async #body(response: Response): Promise<Record<string, unknown>> {
     try {
       const body = await response.text();
-      if (body.length > 65536) throw new Error();
+      if (body.length > 65536)
+        throw new Error('Twitch response exceeds size limit');
       const value = record(JSON.parse(body));
-      if (!value) throw new Error();
+      if (!value) throw new Error('Twitch response must be an object');
       return value;
     } catch {
       throw new Error('Invalid Twitch response');
@@ -171,32 +215,8 @@ export class TwitchAuth {
       );
       if (!response.ok) throw new Error('Device authorization unavailable');
       const body = await this.#body(response);
-      if (
-        !text(body.device_code, 4096) ||
-        !text(body.user_code, 32) ||
-        !text(body.verification_uri, 2048) ||
-        typeof body.expires_in !== 'number' ||
-        body.expires_in <= 0 ||
-        body.expires_in > 86400 ||
-        typeof body.interval !== 'number' ||
-        !Number.isInteger(body.interval) ||
-        body.interval < 1 ||
-        body.interval > 60
-      )
-        throw new Error('Invalid device authorization');
-      const uri = new URL(body.verification_uri);
-      if (
-        uri.protocol !== 'https:' ||
-        !['www.twitch.tv', 'twitch.tv'].includes(uri.hostname) ||
-        uri.pathname !== '/activate' ||
-        uri.username ||
-        uri.password ||
-        (uri.port && uri.port !== '443')
-      )
-        throw new Error('Invalid activation destination');
-      // Twitch can omit the public-client mode from verification_uri. Without
-      // it, the activation page rejects an otherwise matching device user code.
-      uri.searchParams.set('public', 'true');
+      assertDeviceAuthorization(body);
+      const uri = activationUri(body.verification_uri);
       if (this.#attempt !== attempt || attempt.signal.aborted) return;
       const expiresAtMs = Date.now() + body.expires_in * 1000;
       this.#activation = {
@@ -205,50 +225,7 @@ export class TwitchAuth {
         expiresAtMs,
       };
       this.#options.changed();
-      let interval = body.interval * 1000;
-      while (
-        Date.now() < expiresAtMs &&
-        (await wait(interval, attempt.signal))
-      ) {
-        if (Date.now() >= expiresAtMs) break;
-        const tokenResponse = await this.#request(
-          'https://id.twitch.tv/oauth2/token',
-          {
-            method: 'POST',
-            body: new URLSearchParams({
-              client_id: this.#clientId!,
-              scopes: scope,
-              device_code: body.device_code,
-              grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-            }),
-          },
-          attempt.signal,
-        );
-        const tokenBody = await this.#body(tokenResponse);
-        if (!tokenResponse.ok) {
-          if (tokenBody.message === 'authorization_pending') continue;
-          if (
-            tokenBody.message === 'slow_down' ||
-            tokenBody.error === 'slow_down'
-          ) {
-            interval = Math.min(60000, interval + 5000);
-            continue;
-          }
-          throw new AuthorizationRequired();
-        }
-        const tokens = this.#readTokens(tokenBody);
-        const identity = await this.#validate(tokens.access, attempt.signal);
-        if (this.#attempt !== attempt || attempt.signal.aborted) return;
-        this.#tokens = tokens;
-        this.#identity = identity;
-        this.#activation = undefined;
-        this.#phase = 'authorized';
-        this.#options.changed();
-        this.#scheduleValidation(attempt);
-        this.#options.authorized(identity);
-        return;
-      }
-      if (!attempt.signal.aborted) throw new AuthorizationRequired();
+      await this.#pollAuthorization(body, attempt, expiresAtMs);
     } catch (error: unknown) {
       if (this.#attempt !== attempt || attempt.signal.aborted) return;
       this.#clear();
@@ -256,6 +233,54 @@ export class TwitchAuth {
         error instanceof AuthorizationRequired ? 'revoked' : 'error';
       this.#options.changed();
     }
+  }
+
+  async #pollAuthorization(
+    body: DeviceAuthorization,
+    attempt: AbortController,
+    expiresAtMs: number,
+  ): Promise<void> {
+    let interval = body.interval * 1000;
+    while (Date.now() < expiresAtMs && (await wait(interval, attempt.signal))) {
+      if (Date.now() >= expiresAtMs) break;
+      const tokenResponse = await this.#request(
+        'https://id.twitch.tv/oauth2/token',
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            client_id: this.#clientId!,
+            scopes: scope,
+            device_code: body.device_code,
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+          }),
+        },
+        attempt.signal,
+      );
+      const tokenBody = await this.#body(tokenResponse);
+      if (!tokenResponse.ok) {
+        if (tokenBody.message === 'authorization_pending') continue;
+        if (
+          tokenBody.message === 'slow_down' ||
+          tokenBody.error === 'slow_down'
+        ) {
+          interval = Math.min(60000, interval + 5000);
+          continue;
+        }
+        throw new AuthorizationRequired();
+      }
+      const tokens = this.#readTokens(tokenBody);
+      const identity = await this.#validate(tokens.access, attempt.signal);
+      if (this.#attempt !== attempt || attempt.signal.aborted) return;
+      this.#tokens = tokens;
+      this.#identity = identity;
+      this.#activation = undefined;
+      this.#phase = 'authorized';
+      this.#options.changed();
+      this.#scheduleValidation(attempt);
+      this.#options.authorized(identity);
+      return;
+    }
+    if (!attempt.signal.aborted) throw new AuthorizationRequired();
   }
 
   async #refresh(): Promise<void> {
