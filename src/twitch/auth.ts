@@ -33,10 +33,10 @@ interface DeviceAuthorization extends Record<string, unknown> {
   interval: number;
 }
 
-function assertDeviceAuthorization(
+function isDeviceAuthorization(
   body: Record<string, unknown>,
-): asserts body is DeviceAuthorization {
-  if (
+): body is DeviceAuthorization {
+  return !(
     !text(body.device_code, 4096) ||
     !text(body.user_code, 32) ||
     !text(body.verification_uri, 2048) ||
@@ -47,25 +47,18 @@ function assertDeviceAuthorization(
     !Number.isInteger(body.interval) ||
     body.interval < 1 ||
     body.interval > 60
-  )
-    throw new Error('Invalid device authorization');
+  );
 }
 
-function activationUri(value: string): URL {
-  const uri = new URL(value);
-  if (
+function isActivationDestination(uri: URL): boolean {
+  return !(
     uri.protocol !== 'https:' ||
     !['www.twitch.tv', 'twitch.tv'].includes(uri.hostname) ||
     uri.pathname !== '/activate' ||
     uri.username ||
     uri.password ||
     (uri.port && uri.port !== '443')
-  )
-    throw new Error('Invalid activation destination');
-  // Twitch can omit the public-client mode from verification_uri. Without
-  // it, the activation page rejects an otherwise matching device user code.
-  uri.searchParams.set('public', 'true');
-  return uri;
+  );
 }
 
 function wait(ms: number, signal: AbortSignal): Promise<boolean> {
@@ -215,8 +208,14 @@ export class TwitchAuth {
       );
       if (!response.ok) throw new Error('Device authorization unavailable');
       const body = await this.#body(response);
-      assertDeviceAuthorization(body);
-      const uri = activationUri(body.verification_uri);
+      if (!isDeviceAuthorization(body))
+        throw new Error('Invalid device authorization');
+      const uri = new URL(body.verification_uri);
+      if (!isActivationDestination(uri))
+        throw new Error('Invalid activation destination');
+      // Twitch can omit the public-client mode from verification_uri. Without
+      // it, the activation page rejects an otherwise matching device user code.
+      uri.searchParams.set('public', 'true');
       if (this.#attempt !== attempt || attempt.signal.aborted) return;
       const expiresAtMs = Date.now() + body.expires_in * 1000;
       this.#activation = {
