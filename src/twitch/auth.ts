@@ -80,7 +80,7 @@ function wait(ms: number, signal: AbortSignal): Promise<boolean> {
 /** Runtime-only OAuth material. No method returns an access/refresh/device token. */
 export class TwitchAuth {
   readonly #options: Options;
-  #clientId: string | undefined;
+  readonly #clientId: string | undefined;
   #phase: AuthPhase;
   #tokens: Tokens | undefined;
   #identity: Identity | undefined;
